@@ -1,0 +1,605 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+  <title>Karaoké P2P | Micro & Table de Mixage</title>
+  <!-- PeerJS pour signalisation WebRTC simplifiée -->
+  <script src="https://cdn.jsdelivr.net/npm/peerjs@1.4.7/dist/peerjs.min.js"></script>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+      font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+    }
+    body {
+      background: radial-gradient(circle at 20% 20%, #2b3a3f, #1a2327);
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 20px;
+      margin: 0;
+    }
+    .app-container {
+      width: 100%;
+      max-width: 1200px;
+      background: rgba(20, 28, 33, 0.7);
+      backdrop-filter: blur(18px);
+      border-radius: 48px;
+      box-shadow: 0 30px 50px rgba(0,0,0,0.7), inset 0 1px 1px rgba(255,255,255,0.2);
+      padding: 24px;
+      border: 1px solid rgba(255,255,255,0.15);
+    }
+    .hidden {
+      display: none !important;
+    }
+    h1, h2, h3 {
+      color: #ece9e0;
+      text-shadow: 0 4px 8px black;
+      letter-spacing: 1px;
+    }
+    button {
+      background: linear-gradient(180deg, #5b6b73 0%, #2f3b41 100%);
+      border: none;
+      border-radius: 60px;
+      color: #f5efe2;
+      font-weight: bold;
+      padding: 14px 32px;
+      font-size: 1.2rem;
+      box-shadow: 0 10px 15px rgba(0,0,0,0.5), inset 0 1px 2px rgba(255,255,255,0.3);
+      cursor: pointer;
+      transition: all 0.15s ease;
+      text-transform: uppercase;
+      letter-spacing: 2px;
+      border-bottom: 3px solid #1b1e22;
+    }
+    button:active {
+      transform: translateY(3px);
+      box-shadow: 0 4px 8px black;
+    }
+    .home-screen {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 30px;
+      justify-content: center;
+      min-height: 70vh;
+    }
+    .role-buttons {
+      display: flex;
+      gap: 30px;
+      flex-wrap: wrap;
+      justify-content: center;
+    }
+    .svg-ui {
+      width: 100%;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+    }
+    .control-panel {
+      background: rgba(0,0,0,0.35);
+      border-radius: 40px;
+      padding: 20px;
+      margin-top: 20px;
+      backdrop-filter: blur(12px);
+      border: 1px solid rgba(255,255,255,0.2);
+    }
+    .slider-group {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      margin: 12px 0;
+      color: #ddd;
+    }
+    input[type="range"] {
+      width: 140px;
+      background: #2a2f33;
+      height: 8px;
+      border-radius: 8px;
+      appearance: none;
+    }
+    input[type="range"]::-webkit-slider-thumb {
+      appearance: none;
+      width: 24px;
+      height: 24px;
+      background: radial-gradient(circle, #e0c9a6, #8b7a62);
+      border-radius: 50%;
+      box-shadow: 0 4px 8px black;
+      border: 2px solid #fff3d6;
+    }
+    .status-badge {
+      background: #1e2629;
+      padding: 6px 18px;
+      border-radius: 24px;
+      color: #b9e6b0;
+      font-weight: bold;
+      font-size: 0.9rem;
+    }
+    .lyric-display {
+      background: black;
+      color: #ffec9e;
+      font-size: 1.8rem;
+      text-align: center;
+      padding: 15px;
+      border-radius: 20px;
+      margin: 10px 0;
+      font-weight: bold;
+      text-shadow: 0 0 10px gold;
+    }
+    .sticker-area {
+      position: relative;
+      display: inline-block;
+    }
+    .drop-zone {
+      border: 2px dashed #b89b7b;
+      border-radius: 30px;
+      padding: 10px;
+      margin: 10px 0;
+    }
+    #micro-svg-container {
+      position: relative;
+    }
+    .draggable-sticker {
+      position: absolute;
+      width: 60px;
+      height: 60px;
+      pointer-events: auto;
+      cursor: grab;
+      user-select: none;
+    }
+  </style>
+</head>
+<body>
+<div class="app-container" id="mainApp">
+  <div id="homePage" class="home-screen">
+    <svg width="180" height="180" viewBox="0 0 100 100" style="filter: drop-shadow(0 10px 10px black);">
+      <defs>
+        <radialGradient id="micGrad" cx="30%" cy="30%">
+          <stop offset="0%" stop-color="#d4c9b8"/>
+          <stop offset="70%" stop-color="#5a5142"/>
+          <stop offset="100%" stop-color="#2d2a22"/>
+        </radialGradient>
+        <filter id="metal">
+          <feTurbulence baseFrequency="0.05" numOctaves="2"/>
+          <feColorMatrix type="saturate" values="0.1"/>
+          <feBlend in="SourceGraphic" mode="multiply"/>
+        </filter>
+      </defs>
+      <circle cx="50" cy="42" r="18" fill="url(#micGrad)" filter="url(#metal)" stroke="#a39274" stroke-width="2"/>
+      <rect x="46" y="58" width="8" height="22" fill="#3f3a31" rx="4"/>
+      <ellipse cx="50" cy="80" rx="16" ry="5" fill="#4e4436"/>
+    </svg>
+    <h1>KARAOKÉ P2P</h1>
+    <div class="role-buttons">
+      <button id="becomeMicBtn">🎤 Devenir Micro</button>
+      <button id="becomeTableBtn">🎚️ Table de Mixage</button>
+    </div>
+    <p style="color:#aaa; font-size:0.9rem;">Même réseau Wi-Fi requis</p>
+  </div>
+
+  <div id="micMode" class="hidden">
+    <div style="display: flex; justify-content: space-between; align-items: center;">
+      <h2>🎤 Mode Micro</h2>
+      <button id="backFromMic">↩️ Accueil</button>
+    </div>
+    <div class="control-panel" style="text-align: center;">
+      <div id="micSvgContainer" class="sticker-area drop-zone" style="margin:0 auto; width:200px; height:240px;">
+        <svg width="200" height="200" viewBox="0 0 120 120" id="microSvg">
+          <defs>
+            <radialGradient id="micLive" cx="35%" cy="30%">
+              <stop offset="0%" stop-color="#e0d3bb"/>
+              <stop offset="80%" stop-color="#6b5f4c"/>
+            </radialGradient>
+            <filter id="shadowMic">
+              <feDropShadow dx="3" dy="5" stdDeviation="4" flood-color="#000000"/>
+            </filter>
+          </defs>
+          <circle cx="60" cy="45" r="22" fill="url(#micLive)" filter="url(#shadowMic)" stroke="#4a3f2f" stroke-width="2.5"/>
+          <rect x="55" y="65" width="10" height="25" fill="#3f362a" rx="5"/>
+          <ellipse cx="60" cy="92" rx="20" ry="6" fill="#5a4e3c"/>
+        </svg>
+        <div id="stickerLayer" style="position:absolute; top:0; left:0; width:100%; height:100%; pointer-events:none;"></div>
+      </div>
+      <button id="micMuteBtn" style="margin:10px;">🔇 Mute</button>
+      <div id="micStatus" class="status-badge">🟢 Prêt</div>
+      <div class="lyric-display" id="micLyrics">♪ Paroles synchronisées...</div>
+      <input type="file" id="stickerLoader" accept="image/png" style="display:none;">
+      <button id="addStickerBtn">➕ Ajouter sticker PNG</button>
+    </div>
+  </div>
+
+  <div id="tableMode" class="hidden">
+    <div style="display:flex; justify-content: space-between;">
+      <h2>🎚️ Table de Mixage</h2>
+      <button id="backFromTable">↩️ Accueil</button>
+    </div>
+    <div class="control-panel">
+      <div id="connectedMicsList" style="color:#ccc;">Micros connectés : 0</div>
+      <div style="display:flex; gap:20px; flex-wrap:wrap; margin:15px 0;">
+        <div><strong>Contrôle Micro</strong><br>
+          <button id="tableMuteBtn">🔇 Mute micro actif</button>
+          <div class="slider-group">Volume <input type="range" id="tableVolume" min="0" max="1" step="0.01" value="0.8"></div>
+          <div>Égaliseur</div>
+          <div class="slider-group">Basses <input type="range" id="eqLow" min="-20" max="20" value="0"></div>
+          <div class="slider-group">Médiums <input type="range" id="eqMid" min="-20" max="20" value="0"></div>
+          <div class="slider-group">Aigus <input type="range" id="eqHigh" min="-20" max="20" value="0"></div>
+        </div>
+        <div>
+          <strong>Effets</strong><br>
+          <button id="vocalRemoverBtn">🎵 Suppression voix (Karaoké)</button>
+          <div class="slider-group">Réverb <input type="range" id="reverbSlider" min="0" max="1" step="0.1" value="0.2"></div>
+          <button id="savePresetBtn">💾 Sauver Preset</button>
+          <select id="presetSelect" style="margin-left:10px;"></select>
+        </div>
+      </div>
+      <div>
+        <strong>Fichier Karaoké</strong>
+        <input type="file" id="audioFileInput" accept="audio/*">
+        <input type="file" id="lyricFileInput" accept=".lrc,.srt,.txt">
+        <button id="playInstrumentalBtn">▶️ Jouer instrumental</button>
+        <button id="recordOutputBtn" disabled>⏺️ Enregistrer WAV</button>
+        <span id="copyrightWarning" style="color:orange; margin-left:10px;"></span>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+  (function() {
+    // État global
+    let peer = null;
+    let localStream = null;
+    let currentMode = null; // 'mic' ou 'table'
+    let audioContext = null;
+    let micSource = null;
+    let tablePeerConnections = new Map(); // peerId -> { conn, stream }
+    let selectedMicPeerId = null;
+    
+    // Audio processing nodes
+    let equalizerBands = { low: null, mid: null, high: null };
+    let vocalRemoverNode = null;
+    let reverbNode = null;
+    let masterGain = null;
+    let mediaRecorder = null;
+    let recordedChunks = [];
+    
+    // UI elements
+    const homePage = document.getElementById('homePage');
+    const micMode = document.getElementById('micMode');
+    const tableMode = document.getElementById('tableMode');
+    
+    // Initialisation PeerJS (signalisation locale via cloud peerjs, compatible réseau local)
+    function initPeer(mode) {
+      const peerId = `karaoke-${mode}-${Math.floor(Math.random()*10000)}`;
+      peer = new Peer(peerId, {
+        host: '0.peerjs.com',
+        port: 443,
+        secure: true,
+        debug: 0
+      });
+      
+      peer.on('open', id => {
+        console.log(`Peer connecté: ${id} en mode ${mode}`);
+        if (mode === 'table') {
+          document.getElementById('connectedMicsList').innerText = `Table ID: ${id} | En attente de micros...`;
+        }
+      });
+      
+      peer.on('connection', conn => {
+        if (mode === 'table') {
+          setupTableConnection(conn);
+        }
+      });
+      
+      peer.on('call', call => {
+        if (mode === 'table') {
+          call.answer();
+          call.on('stream', remoteStream => {
+            handleRemoteStream(call.peer, remoteStream);
+          });
+        }
+      });
+      
+      peer.on('error', err => console.warn('Peer error', err));
+      return peer;
+    }
+    
+    function connectToTable(tableId) {
+      if (!peer) return;
+      const conn = peer.connect(tableId, { reliable: true });
+      conn.on('open', () => {
+        console.log('Connecté à la table');
+        if (localStream) {
+          const call = peer.call(tableId, localStream);
+          call.on('stream', () => {});
+        }
+      });
+    }
+    
+    function setupTableConnection(conn) {
+      conn.on('open', () => {
+        tablePeerConnections.set(conn.peer, { conn, stream: null });
+        updateMicList();
+      });
+      conn.on('close', () => {
+        tablePeerConnections.delete(conn.peer);
+        updateMicList();
+      });
+    }
+    
+    function handleRemoteStream(peerId, stream) {
+      if (tablePeerConnections.has(peerId)) {
+        tablePeerConnections.get(peerId).stream = stream;
+        if (!selectedMicPeerId) selectedMicPeerId = peerId;
+        updateMicList();
+      }
+    }
+    
+    function updateMicList() {
+      const listEl = document.getElementById('connectedMicsList');
+      const count = tablePeerConnections.size;
+      listEl.innerHTML = `Micros connectés : ${count} | `;
+      tablePeerConnections.forEach((val, id) => {
+        listEl.innerHTML += `<button class="select-mic" data-id="${id}">📌 ${id}</button> `;
+      });
+      document.querySelectorAll('.select-mic').forEach(btn => {
+        btn.addEventListener('click', (e) => {
+          selectedMicPeerId = e.target.dataset.id;
+          applyAudioRouting();
+        });
+      });
+    }
+    
+    async function startMicAudio() {
+      try {
+        localStream = await navigator.mediaDevices.getUserMedia({ audio: true, video: false });
+        document.getElementById('micStatus').innerText = '🟢 Micro actif';
+        return true;
+      } catch (e) {
+        alert('Micro non accessible');
+        return false;
+      }
+    }
+    
+    function setupAudioContext() {
+      if (!audioContext) {
+        audioContext = new (window.AudioContext || window.webkitAudioContext)();
+        masterGain = audioContext.createGain();
+        masterGain.gain.value = 0.8;
+        masterGain.connect(audioContext.destination);
+        
+        equalizerBands.low = audioContext.createBiquadFilter();
+        equalizerBands.low.type = 'lowshelf';
+        equalizerBands.low.frequency.value = 320;
+        
+        equalizerBands.mid = audioContext.createBiquadFilter();
+        equalizerBands.mid.type = 'peaking';
+        equalizerBands.mid.frequency.value = 1000;
+        equalizerBands.mid.Q.value = 0.8;
+        
+        equalizerBands.high = audioContext.createBiquadFilter();
+        equalizerBands.high.type = 'highshelf';
+        equalizerBands.high.frequency.value = 3200;
+        
+        vocalRemoverNode = audioContext.createBiquadFilter();
+        vocalRemoverNode.type = 'notch';
+        vocalRemoverNode.frequency.value = 1000;
+        vocalRemoverNode.Q.value = 0.2;
+        
+        reverbNode = audioContext.createConvolver();
+        createReverbImpulse();
+      }
+    }
+    
+    async function createReverbImpulse() {
+      const rate = audioContext.sampleRate;
+      const length = rate * 1.5;
+      const impulse = audioContext.createBuffer(2, length, rate);
+      for (let channel = 0; channel < 2; channel++) {
+        const data = impulse.getChannelData(channel);
+        for (let i = 0; i < length; i++) {
+          data[i] = (Math.random() * 2 - 1) * Math.pow(1 - i/length, 2);
+        }
+      }
+      reverbNode.buffer = impulse;
+    }
+    
+    function applyAudioRouting() {
+      if (!audioContext || !selectedMicPeerId) return;
+      const entry = tablePeerConnections.get(selectedMicPeerId);
+      if (!entry || !entry.stream) return;
+      
+      if (micSource) micSource.disconnect();
+      micSource = audioContext.createMediaStreamSource(entry.stream);
+      
+      micSource.disconnect();
+      micSource.connect(equalizerBands.low);
+      equalizerBands.low.connect(equalizerBands.mid);
+      equalizerBands.mid.connect(equalizerBands.high);
+      
+      if (document.getElementById('vocalRemoverBtn').classList.contains('active')) {
+        equalizerBands.high.connect(vocalRemoverNode);
+        vocalRemoverNode.connect(reverbNode);
+      } else {
+        equalizerBands.high.connect(reverbNode);
+      }
+      reverbNode.connect(masterGain);
+    }
+    
+    // Mode Micro
+    document.getElementById('becomeMicBtn').addEventListener('click', async () => {
+      currentMode = 'mic';
+      homePage.classList.add('hidden');
+      micMode.classList.remove('hidden');
+      await startMicAudio();
+      initPeer('mic');
+      setTimeout(() => {
+        const tableId = prompt('ID de la table de mixage (affiche sur sa page) :');
+        if (tableId) connectToTable(tableId);
+      }, 800);
+    });
+    
+    document.getElementById('micMuteBtn').addEventListener('click', () => {
+      if (localStream) {
+        const enabled = !localStream.getAudioTracks()[0].enabled;
+        localStream.getAudioTracks()[0].enabled = enabled;
+        document.getElementById('micMuteBtn').innerText = enabled ? '🔇 Mute' : '🎙️ Unmute';
+      }
+    });
+    
+    document.getElementById('addStickerBtn').addEventListener('click', () => {
+      document.getElementById('stickerLoader').click();
+    });
+    document.getElementById('stickerLoader').addEventListener('change', (e) => {
+      const file = e.target.files[0];
+      if (!file) return;
+      const reader = new FileReader();
+      reader.onload = (ev) => {
+        const img = document.createElement('img');
+        img.src = ev.target.result;
+        img.className = 'draggable-sticker';
+        img.style.left = '40px';
+        img.style.top = '40px';
+        img.draggable = false;
+        makeStickerDraggable(img);
+        document.getElementById('stickerLayer').appendChild(img);
+      };
+      reader.readAsDataURL(file);
+    });
+    
+    function makeStickerDraggable(el) {
+      let offsetX, offsetY;
+      el.addEventListener('pointerdown', (e) => {
+        e.preventDefault();
+        offsetX = e.clientX - el.getBoundingClientRect().left;
+        offsetY = e.clientY - el.getBoundingClientRect().top;
+        const onMove = (ev) => {
+          el.style.left = (ev.clientX - offsetX) + 'px';
+          el.style.top = (ev.clientY - offsetY) + 'px';
+        };
+        const onUp = () => {
+          document.removeEventListener('pointermove', onMove);
+          document.removeEventListener('pointerup', onUp);
+        };
+        document.addEventListener('pointermove', onMove);
+        document.addEventListener('pointerup', onUp);
+      });
+    }
+    
+    // Mode Table
+    document.getElementById('becomeTableBtn').addEventListener('click', () => {
+      currentMode = 'table';
+      homePage.classList.add('hidden');
+      tableMode.classList.remove('hidden');
+      setupAudioContext();
+      initPeer('table');
+      document.getElementById('connectedMicsList').innerText = 'Table prête. ID copié dans presse-papier.';
+      if (peer) {
+        peer.on('open', id => {
+          navigator.clipboard.writeText(id).catch(() => {});
+          document.getElementById('connectedMicsList').innerText = `Table ID: ${id} | Micros: 0`;
+        });
+      }
+    });
+    
+    document.getElementById('tableMuteBtn').addEventListener('click', () => {
+      if (selectedMicPeerId && tablePeerConnections.has(selectedMicPeerId)) {
+        const stream = tablePeerConnections.get(selectedMicPeerId).stream;
+        if (stream) stream.getAudioTracks().forEach(t => t.enabled = !t.enabled);
+      }
+    });
+    
+    document.getElementById('tableVolume').addEventListener('input', (e) => {
+      if (masterGain) masterGain.gain.value = parseFloat(e.target.value);
+    });
+    document.getElementById('eqLow').addEventListener('input', e => { if(equalizerBands.low) equalizerBands.low.gain.value = e.target.value; });
+    document.getElementById('eqMid').addEventListener('input', e => { if(equalizerBands.mid) equalizerBands.mid.gain.value = e.target.value; });
+    document.getElementById('eqHigh').addEventListener('input', e => { if(equalizerBands.high) equalizerBands.high.gain.value = e.target.value; });
+    
+    document.getElementById('vocalRemoverBtn').addEventListener('click', function() {
+      this.classList.toggle('active');
+      applyAudioRouting();
+    });
+    document.getElementById('reverbSlider').addEventListener('input', (e) => {
+      if (reverbNode && masterGain) {
+        const dryGain = 1 - parseFloat(e.target.value);
+        reverbNode.connect(masterGain);
+      }
+    });
+    
+    document.getElementById('savePresetBtn').addEventListener('click', () => {
+      const preset = {
+        volume: masterGain?.gain.value,
+        low: equalizerBands.low?.gain.value,
+        mid: equalizerBands.mid?.gain.value,
+        high: equalizerBands.high?.gain.value,
+      };
+      localStorage.setItem('karaokePreset_'+Date.now(), JSON.stringify(preset));
+      loadPresets();
+    });
+    
+    function loadPresets() {
+      const select = document.getElementById('presetSelect');
+      select.innerHTML = '<option>-- Presets --</option>';
+      for (let i=0; i<localStorage.length; i++) {
+        const key = localStorage.key(i);
+        if (key.startsWith('karaokePreset_')) {
+          const opt = document.createElement('option');
+          opt.value = key;
+          opt.text = key.replace('karaokePreset_','');
+          select.appendChild(opt);
+        }
+      }
+    }
+    document.getElementById('presetSelect').addEventListener('change', (e) => {
+      const data = JSON.parse(localStorage.getItem(e.target.value));
+      if (!data) return;
+      if (masterGain) masterGain.gain.value = data.volume||0.8;
+      if (equalizerBands.low) equalizerBands.low.gain.value = data.low||0;
+    });
+    
+    document.getElementById('audioFileInput').addEventListener('change', (e) => {
+      const file = e.target.files[0];
+      if (file) document.getElementById('playInstrumentalBtn').disabled = false;
+    });
+    
+    document.getElementById('playInstrumentalBtn').addEventListener('click', () => {
+      const file = document.getElementById('audioFileInput').files[0];
+      if (!file) return;
+      const url = URL.createObjectURL(file);
+      const audio = new Audio(url);
+      audio.play();
+    });
+    
+    document.getElementById('recordOutputBtn').addEventListener('click', () => {
+      if (!audioContext) return;
+      const dest = audioContext.createMediaStreamDestination();
+      masterGain.connect(dest);
+      mediaRecorder = new MediaRecorder(dest.stream);
+      mediaRecorder.ondataavailable = e => recordedChunks.push(e.data);
+      mediaRecorder.onstop = () => {
+        const blob = new Blob(recordedChunks, {type:'audio/wav'});
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url; a.download = 'karaoke_session.wav'; a.click();
+        recordedChunks = [];
+      };
+      mediaRecorder.start();
+      setTimeout(() => mediaRecorder.stop(), 10000);
+    });
+    
+    document.getElementById('backFromMic').addEventListener('click', ()=> location.reload());
+    document.getElementById('backFromTable').addEventListener('click', ()=> location.reload());
+    loadPresets();
+    
+    window.addEventListener('beforeunload', () => {
+      if (localStream) localStream.getTracks().forEach(t => t.stop());
+      if (peer) peer.destroy();
+    });
+  })();
+</script>
+</body>
+</html>
