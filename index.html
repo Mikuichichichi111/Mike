@@ -5,6 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Studio Live - Console P2P</title>
     
+    <!-- Bibliothèques distantes pour le P2P et QR Code -->
     <script src="https://unpkg.com/peerjs@1.5.2/dist/peerjs.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
 
@@ -185,7 +186,7 @@
         /* 2. INTERFACE MICROPHONE (SKEUOMORPHISME)   */
         /* ========================================== */
         #view-microphone {
-            background: linear-gradient(to bottom, #18181f, #0c0c0e);
+            background: linear-gradient(to bottom, #141419, #08080a);
         }
 
         .mic-container {
@@ -206,27 +207,26 @@
             align-items: center;
         }
 
-        /* Tête du Micro (Grille) */
+        /* Tête du Micro (Skeuomorphe Lourde) */
         .mic-head {
             position: relative;
-            width: 160px;
-            height: 160px;
+            width: 170px;
+            height: 170px;
             z-index: 5;
-            transition: all 0.5s ease;
         }
 
-        /* Bague LED physique */
+        /* Bague LED physique avec occlusion interne */
         .mic-led-ring {
             position: absolute;
-            bottom: -5px;
+            bottom: -3px;
             left: 50%;
             transform: translateX(-50%);
             width: 116px;
-            height: 12px;
-            border-radius: 6px;
-            background: #111;
+            height: 14px;
+            border-radius: 7px;
+            background: #09090b;
             z-index: 6;
-            box-shadow: inset 0 1px 3px rgba(0,0,0,0.8);
+            box-shadow: inset 0 2px 4px rgba(0,0,0,0.9), 0 1px 1px rgba(255,255,255,0.1);
             transition: background 0.3s, box-shadow 0.3s;
         }
 
@@ -243,8 +243,8 @@
             position: absolute;
             width: 100%;
             height: 100%;
-            border-radius: 0 0 20px 20px;
-            box-shadow: 0 20px 40px rgba(0,0,0,0.6);
+            border-radius: 0 0 24px 24px;
+            box-shadow: 0 25px 50px rgba(0,0,0,0.85);
             transition: background 0.5s;
         }
 
@@ -255,27 +255,27 @@
             left: 0;
             width: 100%;
             height: 100%;
-            border-radius: 0 0 20px 20px;
+            border-radius: 0 0 24px 24px;
             overflow: hidden;
             z-index: 2;
             pointer-events: none;
         }
 
-        /* LE MASQUE DE RELIEF ET D'OMBRE CYLINDRIQUE */
+        /* LE MASQUE DE RELIEF ET D'OMBRE CYLINDRIQUE (RENFORCÉ) */
         .mic-shadow-overlay {
             position: absolute;
             top: 0;
             left: 0;
             width: 100%;
             height: 100%;
-            border-radius: 0 0 20px 20px;
+            border-radius: 0 0 24px 24px;
             background: linear-gradient(to right, 
-                rgba(0,0,0,0.85) 0%, 
-                rgba(0,0,0,0.3) 15%, 
-                rgba(255,255,255,0.15) 45%, 
-                rgba(255,255,255,0.15) 55%, 
-                rgba(0,0,0,0.4) 85%, 
-                rgba(0,0,0,0.9) 100%);
+                rgba(0,0,0,0.95) 0%, 
+                rgba(0,0,0,0.4) 12%, 
+                rgba(255,255,255,0.22) 45%, 
+                rgba(255,255,255,0.22) 55%, 
+                rgba(0,0,0,0.5) 88%, 
+                rgba(0,0,0,0.98) 100%);
             z-index: 3;
             pointer-events: none;
             mix-blend-mode: multiply;
@@ -284,7 +284,7 @@
         /* Éléments de contrôle physiques sur le manche */
         .mic-controls {
             position: absolute;
-            top: 40px;
+            top: 45px;
             left: 50%;
             transform: translateX(-50%);
             z-index: 10;
@@ -293,56 +293,57 @@
             align-items: center;
         }
 
-        /* Switch à glissière mécanique */
+        /* Switch à glissière mécanique réaliste */
         .switch-plate {
-            width: 32px;
-            height: 85px;
-            background: linear-gradient(145deg, #18181c, #2a2a30);
-            border: 2px solid #111;
-            border-radius: 6px;
+            width: 36px;
+            height: 90px;
+            background: linear-gradient(145deg, #09090b, #202025);
+            border: 2px solid #000;
+            border-radius: 8px;
             position: relative;
-            box-shadow: inset 0 2px 5px rgba(0,0,0,0.7), 0 1px 1px rgba(255,255,255,0.1);
+            box-shadow: inset 0 4px 8px rgba(0,0,0,0.9), 0 1px 2px rgba(255,255,255,0.15);
             cursor: pointer;
         }
 
         .switch-knob {
-            width: 24px;
-            height: 35px;
-            background: linear-gradient(to bottom, #7a7a85 0%, #484850 50%, #282830 100%);
-            border-radius: 4px;
+            width: 28px;
+            height: 38px;
+            background: linear-gradient(to bottom, #9494a1 0%, #5c5c66 45%, #2b2b33 50%, #121217 55%, #474752 100%);
+            border-radius: 5px;
             position: absolute;
             left: 2px;
             top: 4px;
-            box-shadow: 0 3px 6px rgba(0,0,0,0.6), inset 0 1px 0 rgba(255,255,255,0.3);
-            border: 1px solid #1c1c20;
-            transition: top 0.15s cubic-bezier(0.25, 1, 0.5, 1);
+            box-shadow: 0 5px 10px rgba(0,0,0,0.75), inset 0 1px 0 rgba(255,255,255,0.4);
+            border: 1px solid #0a0a0d;
+            transition: top 0.18s cubic-bezier(0.25, 1, 0.5, 1);
         }
+        /* Stries physiques antidérapantes sur le bouton */
         .switch-knob::before {
             content: '';
             position: absolute;
-            top: 50%; left: 3px; right: 3px; height: 3px;
-            background: #111; margin-top: -5px;
-            box-shadow: 0 4px 0 #111, 0 -4px 0 #111;
+            top: 50%; left: 4px; right: 4px; height: 2px;
+            background: rgba(0,0,0,0.6); margin-top: -6px;
+            box-shadow: 0 4px 0 rgba(0,0,0,0.6), 0 8px 0 rgba(0,0,0,0.6), 0 -4px 0 rgba(0,0,0,0.6);
+            border-bottom: 1px solid rgba(255,255,255,0.15);
         }
 
         .switch-plate.muted .switch-knob {
-            top: 42px;
+            top: 44px;
         }
 
-        /* Gravure discrète du nom du micro */
+        /* Gravure ciselée du nom du micro */
         .mic-engraving {
             position: absolute;
-            bottom: 25px;
+            bottom: 30px;
             left: 0;
             width: 100%;
             text-align: center;
             font-size: 11px;
             font-weight: 700;
             letter-spacing: 2px;
-            color: rgba(255, 255, 255, 0.22);
-            text-shadow: 1px 1px 1px rgba(255,255,255,0.05), -1px -1px 1px rgba(0,0,0,0.6);
+            color: rgba(255, 255, 255, 0.18);
+            text-shadow: 1px 1px 1px rgba(255,255,255,0.04), -1px -1px 1px rgba(0,0,0,0.7);
             text-transform: uppercase;
-            cursor: text;
             z-index: 10;
         }
         .mic-engraving input {
@@ -409,7 +410,7 @@
             bottom: 30px;
             display: flex;
             gap: 12px;
-            background: rgba(0,0,0,0.4);
+            background: rgba(0,0,0,0.5);
             padding: 8px 16px;
             border-radius: 30px;
             border: 1px solid rgba(255,255,255,0.05);
@@ -766,7 +767,7 @@
             border-radius: 6px;
         }
 
-        /* Barres de pagination persistantes au bas du mixeur */
+        /* Barres de pagination peristantes au bas du mixeur */
         .mixer-breadcrumbs {
             display: flex;
             justify-content: center;
@@ -844,8 +845,12 @@
 
     <div class="acoustic-texture"></div>
 
+    <!-- 0. BOUTON CLOSE UNIQUE -->
     <button id="global-close-btn" class="btn-close" style="display:none;">X</button>
 
+    <!-- ========================================== -->
+    <!-- 1. VUE MENU PRINCIPAL                      -->
+    <!-- ========================================== -->
     <div id="view-menu" class="view active">
         <h1 class="menu-title">LAVENDER CORE AUDIO</h1>
         <div class="menu-grid">
@@ -867,40 +872,64 @@
         </div>
     </div>
 
+    <!-- ========================================== -->
+    <!-- 2. VUE INTERFACE MICROPHONE                -->
+    <!-- ========================================== -->
     <div id="view-microphone" class="view">
         <div class="mic-status-node" id="mic-network-status">Déconnecté</div>
         
         <div class="mic-container">
             <div class="mic-wrapper">
-                <svg class="mic-head" id="mic-head-svg" viewBox="0 0 120 120">
+                
+                <!-- REFACHONNAGE SKEUOMORPHE DE LA CAPSULE -->
+                <svg class="mic-head" id="mic-head-svg" viewBox="0 0 120 120" style="filter: drop-shadow(0px 10px 15px rgba(0,0,0,0.65));">
                     <defs>
-                        <pattern id="grid-pattern" width="6" height="6" patternUnits="userSpaceOnUse">
-                            <path d="M 0 3 L 6 3 M 3 0 L 3 6" fill="none" stroke="#222" stroke-width="0.8"/>
-                            <path d="M 0 0 L 6 6 M 6 0 L 0 6" fill="none" stroke="#666" stroke-width="0.4"/>
+                        <!-- Texture de maille de fer entrelacée tridimensionnelle -->
+                        <pattern id="real-mesh-texture" width="4" height="4" patternUnits="userSpaceOnUse">
+                            <rect width="4" height="4" fill="#141418"/>
+                            <path d="M 0 2 L 4 2 M 2 0 L 2 4" stroke="#2c2c35" stroke-width="1.2"/>
+                            <path d="M 0 2 L 4 2 M 2 0 L 2 4" stroke="#8b8b9c" stroke-width="0.4" opacity="0.75"/>
+                            <circle cx="2" cy="2" r="0.5" fill="#ffffff" opacity="0.35"/>
                         </pattern>
-                        <radialGradient id="sphere-grad" cx="35%" cy="35%" r="65%">
-                            <stop offset="0%" stop-color="#fff" stop-opacity="0.9"/>
-                            <stop offset="40%" stop-color="#ccc"/>
-                            <stop offset="80%" stop-color="#555"/>
-                            <stop offset="100%" stop-color="#222"/>
+                        
+                        <!-- Ombrage sphérique lourd pour creuser le relief -->
+                        <radialGradient id="sphere-3d-shading" cx="35%" cy="30%" r="70%">
+                            <stop offset="0%" stop-color="#ffffff" stop-opacity="0.35"/>
+                            <stop offset="20%" stop-color="#aaaaaa" stop-opacity="0.05"/>
+                            <stop offset="60%" stop-color="#1e1e24" stop-opacity="0.75"/>
+                            <stop offset="88%" stop-color="#060608" stop-opacity="0.95"/>
+                            <stop offset="100%" stop-color="#000000" stop-opacity="1"/>
                         </radialGradient>
-                        <linearGradient id="chrome-light" x1="0%" y1="0%" x2="100%" y2="100%">
-                            <stop offset="0%" stop-color="#999"/>
-                            <stop offset="20%" stop-color="#fff"/>
-                            <stop offset="40%" stop-color="#555"/>
-                            <stop offset="65%" stop-color="#fff"/>
-                            <stop offset="100%" stop-color="#111"/>
+
+                        <!-- Chrome poli ultra-réfléchissant -->
+                        <linearGradient id="heavy-chrome" x1="0%" y1="0%" x2="100%" y2="0%">
+                            <stop offset="0%" stop-color="#2a2a32"/>
+                            <stop offset="15%" stop-color="#8a8a98"/>
+                            <stop offset="25%" stop-color="#ffffff"/>
+                            <stop offset="45%" stop-color="#4e4e59"/>
+                            <stop offset="55%" stop-color="#ffffff"/>
+                            <stop offset="78%" stop-color="#353540"/>
+                            <stop offset="92%" stop-color="#9191a1"/>
+                            <stop offset="100%" stop-color="#121216"/>
                         </linearGradient>
                     </defs>
-                    <circle cx="60" cy="55" r="45" fill="url(#sphere-grad)"/>
-                    <circle cx="60" cy="55" r="45" fill="url(#grid-pattern)" opacity="0.9"/>
-                    <rect x="12" y="92" width="96" height="14" rx="3" fill="url(#chrome-light)" stroke="#111" stroke-width="1"/>
+                    
+                    <!-- Base texturée métallique -->
+                    <circle cx="60" cy="55" r="45" fill="url(#real-mesh-texture)"/>
+                    <!-- Occlusion volumétrique -->
+                    <circle cx="60" cy="55" r="45" fill="url(#sphere-3d-shading)" style="mix-blend-mode: multiply;"/>
+                    <!-- Hotspot brillant (Glossy studio flare) -->
+                    <ellipse cx="46" cy="30" rx="20" ry="10" fill="#ffffff" opacity="0.22" transform="rotate(-15, 46, 30)" style="filter: blur(1px);"/>
+                    
+                    <!-- Bagues d'assemblage en chrome lourd biseauté -->
+                    <rect x="12" y="92" width="96" height="9" rx="1" fill="url(#heavy-chrome)"/>
+                    <rect x="12" y="101" width="96" height="4" fill="#07070a"/>
                 </svg>
 
                 <div class="mic-led-ring" id="mic-led-indicator"></div>
 
                 <div class="mic-handle-wrapper" id="mic-handle-zone">
-                    <div class="mic-handle-base" id="mic-handle-texture" style="background: linear-gradient(to right, #333, #555 30%, #aaa 50%, #555 70%, #222 100%);"></div>
+                    <div class="mic-handle-base" id="mic-handle-texture" style="background: linear-gradient(to right, #15151a, #33333d 30%, #6e6e7a 50%, #33333d 70%, #101014);"></div>
                     
                     <div class="mic-sticker-zone" id="sticker-runtime-destination"></div>
                     
@@ -927,11 +956,15 @@
         <input type="file" id="hidden-file-input" accept="image/*" style="display:none;">
     </div>
 
+    <!-- ========================================== -->
+    <!-- 3. VUE TABLE DE MIXAGE                     -->
+    <!-- ========================================== -->
     <div id="view-mixer" class="view">
         <div class="mixer-window">
             
             <div class="mixer-pages-container" id="mixer-pages-scroller">
                 
+                <!-- PAGE 1 : GÉNÉRALE -->
                 <div class="mixer-page" id="mx-page-1">
                     <div class="page-header">
                         <h2>Console Principale - Accès Direct</h2>
@@ -949,6 +982,7 @@
                     <div class="tracks-deck" id="simple-tracks-container"></div>
                 </div>
 
+                <!-- PAGE 2 : AVANCÉE -->
                 <div class="mixer-page" id="mx-page-2">
                     <div class="page-header">
                         <h2>Égalisation & Gains Avancés</h2>
@@ -956,6 +990,7 @@
                     <div class="tracks-deck" id="advanced-tracks-container"></div>
                 </div>
 
+                <!-- PAGE 3 : RACK D'EFFETS -->
                 <div class="mixer-page" id="mx-page-3">
                     <div class="page-header">
                         <h2>Rack de Périphériques FX Dynamiques</h2>
@@ -993,6 +1028,7 @@
                     </div>
                 </div>
 
+                <!-- PAGE 4 : CONFIGURATION MODULAIRE -->
                 <div class="mixer-page" id="mx-page-4">
                     <div class="page-header">
                         <h2>Espace Personnalisé</h2>
@@ -1000,6 +1036,7 @@
                     <div class="btn-page-plus" id="btn-custom-macro">+</div>
                 </div>
 
+                <!-- PAGE 5 : REGIE LUMIERE SYNCHRO -->
                 <div class="mixer-page" id="mx-page-light" style="display:none;">
                     <div class="page-header">
                         <h2>Régie Générale Lumière & Scène</h2>
@@ -1022,6 +1059,7 @@
 
             </div>
 
+            <!-- Banderole Basse Spectrum -->
             <div class="mixer-light-bar-control">
                 <span style="font-size:11px; font-weight:700; color:#8a8a9e;">TEINTE MATRIX</span>
                 <div class="color-spectrum-banner" id="spectrum-slider">
@@ -1030,6 +1068,7 @@
                 <span style="font-size:11px; font-weight:700; color:var(--neon-green);" id="lbl-light-status">LUMIÈRE DISPONIBLE</span>
             </div>
 
+            <!-- Pagination Indicators -->
             <div class="mixer-breadcrumbs" id="mixer-dots-panel">
                 <div class="breadcrumb-dot active"></div>
                 <div class="breadcrumb-dot"></div>
@@ -1041,14 +1080,19 @@
         </div>
     </div>
 
+    <!-- ========================================== -->
+    <!-- 4. VUE INTERFACE SOURCE DE LUMIÈRE         -->
+    <!-- ========================================== -->
     <div id="view-light-source" class="view">
         <div class="flip-card-3d-spatial" id="light-3d-card">
             
+            <!-- FACE AVANT -->
             <div class="light-face light-face-front" id="light-canvas-front">
                 <div id="light-text-info" style="font-size:14px; color:rgba(255,255,255,0.4); font-weight:bold; letter-spacing:1px;">EN ATTENTE DE LA REGIE P2P...</div>
                 <video class="light-video-layer" id="light-loop-video" loop muted playsinline src=""></video>
             </div>
 
+            <!-- FACE ARRIÈRE (FLIP 3D) -->
             <div class="light-face light-face-back">
                 <div>
                     <h2 style="font-size:18px; letter-spacing:1px; border-bottom:1px solid #444; padding-bottom:8px; margin-bottom:20px; color:var(--brat-green)">MODULE ARRIÈRE - BACK PANEL</h2>
@@ -1082,6 +1126,9 @@
         </div>
     </div>
 
+    <!-- ========================================== -->
+    <!-- LOGIQUE LOGICIELLE DE BASE (JS)            -->
+    <!-- ========================================== -->
     <script>
         let currentMode = 'menu';
         let peerInstance = null;
@@ -1146,15 +1193,15 @@
             document.querySelectorAll('.skin-btn').forEach(b => b.classList.remove('active'));
             
             if(skin === 'modern') {
-                handle.style.background = "linear-gradient(to right, #222, #3a3a42 30%, #555 50%, #3a3a42 70%, #1a1a1f)";
+                handle.style.background = "linear-gradient(to right, #15151a, #33333d 30%, #6e6e7a 50%, #33333d 70%, #101014)";
                 led.style.background = isMutedLocal ? "#600" : "#00f3ff";
                 if(!isMutedLocal) led.style.boxShadow = "0 0 12px #00f3ff, inset 0 1px 2px rgba(255,255,255,0.4)";
             } else if(skin === 'vintage') {
-                handle.style.background = "linear-gradient(to right, #777, #fff 25%, #999 50%, #fff 75%, #444)";
+                handle.style.background = "linear-gradient(to right, #444, #e1e1e8 25%, #888894 50%, #f0f0f5 75%, #222)";
                 led.style.background = isMutedLocal ? "#400" : "#fffb00";
                 if(!isMutedLocal) led.style.boxShadow = "0 0 10px #fffb00";
             } else if(skin === 'cyberpunk') {
-                handle.style.background = "linear-gradient(145deg, #09090e, #141423)";
+                handle.style.background = "linear-gradient(145deg, #09090e, #1c1c30)";
                 led.style.background = isMutedLocal ? "#ff0055" : "#39ff14";
                 if(!isMutedLocal) led.style.boxShadow = "0 0 15px #39ff14";
             }
@@ -1498,7 +1545,7 @@
                 incomingAudioNodes[id].monitor.gain.value = 0.0;
             } else {
                 btn.classList.add('monitor-active');
-                btn.style.borderColor = "var(--neon-green)"; // FIX : Variable CSS correctement entourée de guillemets
+                btn.style.borderColor = "var(--neon-green)";
                 btn.innerText = "MONITOR ON";
                 incomingAudioNodes[id].monitor.gain.value = 1.0;
             }
