@@ -5,7 +5,6 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Studio Live - Console P2P</title>
     
-    <!-- Bibliothèques distantes pour le P2P et QR Code -->
     <script src="https://unpkg.com/peerjs@1.5.2/dist/peerjs.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
 
@@ -249,7 +248,7 @@
             transition: background 0.5s;
         }
 
-        /* ZONE ACTIVE POUR LES STICKERS (Couche Médiane Sandwich) */
+        /* ZONE ACTIVE POUR LES STICKERS */
         .mic-sticker-zone {
             position: absolute;
             top: 0;
@@ -262,7 +261,7 @@
             pointer-events: none;
         }
 
-        /* LE MASQUE DE RELIEF ET D'OMBRE CYLINDRIQUE (Couche Haute Sandwich) */
+        /* LE MASQUE DE RELIEF ET D'OMBRE CYLINDRIQUE */
         .mic-shadow-overlay {
             position: absolute;
             top: 0;
@@ -449,7 +448,7 @@
         }
 
         /* ========================================== */
-        /* 3. TABLE DE MIXAGE (INTERFACE PLEIN ÉCRAN) */
+        /* 3. TABLE DE MIXAGE                         */
         /* ========================================== */
         .mixer-window {
             width: 100%;
@@ -570,7 +569,7 @@
             top: 0;
             opacity: 0;
             cursor: pointer;
-            writing-mode: bt-lr; /* Vertical standard navigation workaround */
+            writing-mode: bt-lr;
             -webkit-appearance: slider-vertical;
         }
         .fader-knob-physical {
@@ -678,7 +677,6 @@
             cursor: pointer;
             transition: all 0.2s;
         }
-        /* Effet de zoom plein écran lors du double-clic */
         .fx-module.zoomed {
             position: fixed;
             top: 10%; left: 10%; width: 80vw; height: 80vh;
@@ -792,7 +790,7 @@
         /* 4. SOURCE DE LUMIÈRE (EFFET FLIP 3D)       */
         /* ========================================== */
         #view-light-source {
-            perspective: 1400px; /* Perspective pour effet 3D complet */
+            perspective: 1400px;
             background: #000;
         }
         .flip-card-3d-spatial {
@@ -846,12 +844,8 @@
 
     <div class="acoustic-texture"></div>
 
-    <!-- 0. BOUTON CLOSE UNIQUE -->
     <button id="global-close-btn" class="btn-close" style="display:none;">X</button>
 
-    <!-- ========================================== -->
-    <!-- 1. VUE MENU PRINCIPAL                      -->
-    <!-- ========================================== */ -->
     <div id="view-menu" class="view active">
         <h1 class="menu-title">LAVENDER CORE AUDIO</h1>
         <div class="menu-grid">
@@ -873,23 +867,17 @@
         </div>
     </div>
 
-    <!-- ========================================== -->
-    <!-- 2. VUE INTERFACE MICROPHONE                -->
-    <!-- ========================================== -->
     <div id="view-microphone" class="view">
         <div class="mic-status-node" id="mic-network-status">Déconnecté</div>
         
         <div class="mic-container">
             <div class="mic-wrapper">
-                <!-- Tête du micro vectorielle complexe -->
                 <svg class="mic-head" id="mic-head-svg" viewBox="0 0 120 120">
                     <defs>
-                        <!-- Grille Standard Mesh -->
                         <pattern id="grid-pattern" width="6" height="6" patternUnits="userSpaceOnUse">
                             <path d="M 0 3 L 6 3 M 3 0 L 3 6" fill="none" stroke="#222" stroke-width="0.8"/>
                             <path d="M 0 0 L 6 6 M 6 0 L 0 6" fill="none" stroke="#666" stroke-width="0.4"/>
                         </pattern>
-                        <!-- Sphère Chrome dégradé -->
                         <radialGradient id="sphere-grad" cx="35%" cy="35%" r="65%">
                             <stop offset="0%" stop-color="#fff" stop-opacity="0.9"/>
                             <stop offset="40%" stop-color="#ccc"/>
@@ -904,100 +892,75 @@
                             <stop offset="100%" stop-color="#111"/>
                         </linearGradient>
                     </defs>
-                    <!-- Corps Grille principale -->
                     <circle cx="60" cy="55" r="45" fill="url(#sphere-grad)"/>
                     <circle cx="60" cy="55" r="45" fill="url(#grid-pattern)" opacity="0.9"/>
-                    <!-- Anneau central métallique -->
                     <rect x="12" y="92" width="96" height="14" rx="3" fill="url(#chrome-light)" stroke="#111" stroke-width="1"/>
                 </svg>
 
-                <!-- Bague Lumineuse LED -->
                 <div class="mic-led-ring" id="mic-led-indicator"></div>
 
-                <!-- Ensemble Manche (Sandwich) -->
                 <div class="mic-handle-wrapper" id="mic-handle-zone">
-                    <!-- Base Métal (Couche Basse) -->
                     <div class="mic-handle-base" id="mic-handle-texture" style="background: linear-gradient(to right, #333, #555 30%, #aaa 50%, #555 70%, #222 100%);"></div>
                     
-                    <!-- Zone active pour Stickers (Couche Médiane) -->
                     <div class="mic-sticker-zone" id="sticker-runtime-destination"></div>
                     
-                    <!-- Masque d'Ombre Cylindrique (Couche Haute) -->
                     <div class="mic-shadow-overlay"></div>
 
-                    <!-- Contrôles physiques intégrés -->
                     <div class="mic-controls">
                         <div class="switch-plate" id="hardware-mute-switch">
                             <div class="switch-knob"></div>
                         </div>
                     </div>
 
-                    <!-- Gravure Discrète Nom -->
                     <div class="mic-engraving" id="engraving-container">
                         <span id="lbl-mic-name">MIC #01</span>
                     </div>
                 </div>
             </div>
             
-            <!-- Sélecteur de skins physiques -->
             <div class="mic-skin-selector">
                 <button class="skin-btn active" onclick="setMicSkin('modern')">Moderne</button>
                 <button class="skin-btn" onclick="setMicSkin('vintage')">Rétro 50s</button>
                 <button class="skin-btn" onclick="setMicSkin('cyberpunk')">Cyberpunk</button>
             </div>
         </div>
-        <!-- Input invisible pour import fichiers images -->
         <input type="file" id="hidden-file-input" accept="image/*" style="display:none;">
     </div>
 
-    <!-- ========================================== -->
-    <!-- 3. VUE TABLE DE MIXAGE                     -->
-    <!-- ========================================== -->
     <div id="view-mixer" class="view">
         <div class="mixer-window">
             
-            <!-- Pages Container (Défilement Horizontal Snap) -->
             <div class="mixer-pages-container" id="mixer-pages-scroller">
                 
-                <!-- PAGE 1 : GÉNÉRALE / DÉBUTANT -->
                 <div class="mixer-page" id="mx-page-1">
                     <div class="page-header">
                         <h2>Console Principale - Accès Direct</h2>
                         <div id="connection-room-badge" style="font-size:12px; font-weight:bold; color:var(--neon-cyan);">ID: CHERCHE...</div>
                     </div>
 
-                    <!-- Passerelle d'accueil Réseau Local -->
                     <div class="mixer-gateway-card">
                         <div class="qr-holder" id="gateway-qrcode"></div>
                         <div>
                             <h4 style="margin-bottom:6px; font-size:15px;">Connecter des périphériques externes</h4>
-                            <p style="font-size:12px; color:#8a8a9e; line-height:1.4;">Scannez ce QR Code avec vos smartphones pour les appairer instantanément en tant que Micros sans-fil ou Modules de lumière de scène.</p>
+                            <p style="font-size:12px; color:#8a8a9e; line-height:1.4;">Scannez ce QR Code avec vos smartphones pour les appairer instantanément.</p>
                         </div>
                     </div>
 
-                    <!-- Liste des tranches de mixage simplifiées -->
-                    <div class="tracks-deck" id="simple-tracks-container">
-                        <!-- Généré dynamiquement lors des connexions peers -->
-                    </div>
+                    <div class="tracks-deck" id="simple-tracks-container"></div>
                 </div>
 
-                <!-- PAGE 2 : AVANCÉE (INGÉNIEUR SON) -->
                 <div class="mixer-page" id="mx-page-2">
                     <div class="page-header">
                         <h2>Égalisation & Gains Avancés</h2>
                     </div>
-                    <div class="tracks-deck" id="advanced-tracks-container">
-                        <!-- Tranches de réglages fins physiques générées ici -->
-                    </div>
+                    <div class="tracks-deck" id="advanced-tracks-container"></div>
                 </div>
 
-                <!-- PAGE 3 : RACK D'EFFETS VIRTUELS -->
                 <div class="mixer-page" id="mx-page-3">
                     <div class="page-header">
                         <h2>Rack de Périphériques FX Dynamiques</h2>
                     </div>
                     <div class="fx-rack-deck">
-                        <!-- Module Écho / Delay -->
                         <div class="fx-module" ondblclick="zoomFX(this)">
                             <div class="fx-title">Tape Delay Pro</div>
                             <div class="knobs-row" style="margin-top:20px;">
@@ -1013,7 +976,6 @@
                             <button class="btn-square-hardware" onclick="toggleFX(event, this)">FX ON</button>
                         </div>
                         
-                        <!-- Module Reverb Spatial -->
                         <div class="fx-module" ondblclick="zoomFX(this)">
                             <div class="fx-title">Studio Reverb</div>
                             <div class="knobs-row" style="margin-top:20px;">
@@ -1031,7 +993,6 @@
                     </div>
                 </div>
 
-                <!-- PAGE 4 : CONFIGURATION PERSONNALISÉE (+) -->
                 <div class="mixer-page" id="mx-page-4">
                     <div class="page-header">
                         <h2>Espace Personnalisé</h2>
@@ -1039,7 +1000,6 @@
                     <div class="btn-page-plus" id="btn-custom-macro">+</div>
                 </div>
 
-                <!-- PAGE 5 : CONTRÔLE LUMIÈRE INTERNE (DYNAMIQUE) -->
                 <div class="mixer-page" id="mx-page-light" style="display:none;">
                     <div class="page-header">
                         <h2>Régie Générale Lumière & Scène</h2>
@@ -1062,7 +1022,6 @@
 
             </div>
 
-            <!-- Banderole Basse de Contrôle Couleur Fluide -->
             <div class="mixer-light-bar-control">
                 <span style="font-size:11px; font-weight:700; color:#8a8a9e;">TEINTE MATRIX</span>
                 <div class="color-spectrum-banner" id="spectrum-slider">
@@ -1071,7 +1030,6 @@
                 <span style="font-size:11px; font-weight:700; color:var(--neon-green);" id="lbl-light-status">LUMIÈRE DISPONIBLE</span>
             </div>
 
-            <!-- Pagination Visual Dots -->
             <div class="mixer-breadcrumbs" id="mixer-dots-panel">
                 <div class="breadcrumb-dot active"></div>
                 <div class="breadcrumb-dot"></div>
@@ -1083,20 +1041,14 @@
         </div>
     </div>
 
-    <!-- ========================================== -->
-    <!-- 4. VUE INTERFACE SOURCE DE LUMIÈRE         -->
-    <!-- ========================================== -->
     <div id="view-light-source" class="view">
         <div class="flip-card-3d-spatial" id="light-3d-card">
             
-            <!-- FACE AVANT : ÉCRAN PROJECTION LUMINEUX MAXIMAL -->
             <div class="light-face light-face-front" id="light-canvas-front">
                 <div id="light-text-info" style="font-size:14px; color:rgba(255,255,255,0.4); font-weight:bold; letter-spacing:1px;">EN ATTENTE DE LA REGIE P2P...</div>
-                <!-- Couche vidéo loop optionnelle -->
                 <video class="light-video-layer" id="light-loop-video" loop muted playsinline src=""></video>
             </div>
 
-            <!-- FACE ARRIÈRE : POTENTIOMÈTRES & RÉGLAGES PHYSIQUES LOCAUX -->
             <div class="light-face light-face-back">
                 <div>
                     <h2 style="font-size:18px; letter-spacing:1px; border-bottom:1px solid #444; padding-bottom:8px; margin-bottom:20px; color:var(--brat-green)">MODULE ARRIÈRE - BACK PANEL</h2>
@@ -1130,24 +1082,16 @@
         </div>
     </div>
 
-    <!-- ========================================== -->
-    <!-- CORE LOGIC ARCHITECTURE (JAVASCRIPT)       -->
-    <!-- ========================================== -->
     <script>
-        // --- ETAT CONFIGURATION ET ROUTAGE GLOBALE ---
         let currentMode = 'menu';
         let peerInstance = null;
         let p2pRoomId = '';
         let connectedPeers = {};
         
-        // Modules Web Audio API
         let audioCtxHost = null;
         let incomingAudioNodes = {}; 
-
-        // Gestionnaire de Stickers
         let activeSelectedSticker = null;
 
-        // --- ALLUMAGE INITIAL ET ROUTAGE DES VUES ---
         function switchView(targetView) {
             document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
             const dest = document.getElementById(`view-${targetView}`);
@@ -1165,7 +1109,6 @@
         }
 
         document.getElementById('global-close-btn').addEventListener('click', () => {
-            // Nettoyage des processus réseau s'il y a lieu avant reset
             switchView('menu');
         });
 
@@ -1180,7 +1123,7 @@
         }
 
         // ========================================================
-        // ENGINE 2 : LOGIQUE MICROPHONE & GRAPHISMES STICKERS
+        // ENGINE 2 : MICROPHONE & STICKERS
         // ========================================================
         let micCustomName = "MIC #01";
         let isMutedLocal = false;
@@ -1192,20 +1135,18 @@
             setupHardwareMuteSwitch();
             setupInteractiveRename();
             
-            // Tente une connexion automatique au serveur hôte local si l'URL contient un hash
             const targetHost = window.location.hash.replace('#', '');
             initPeerConnection(false, targetHost);
         }
 
         function setMicSkin(skin) {
             const handle = document.getElementById('mic-handle-texture');
-            const head = document.getElementById('mic-head-svg');
             const led = document.getElementById('mic-led-indicator');
             
             document.querySelectorAll('.skin-btn').forEach(b => b.classList.remove('active'));
             
             if(skin === 'modern') {
-                handle.style.background = "linear-gradient(to right, #222, #3a3a42 30%, #555 50%, #3a3a42 70%, #1a1a1f) ";
+                handle.style.background = "linear-gradient(to right, #222, #3a3a42 30%, #555 50%, #3a3a42 70%, #1a1a1f)";
                 led.style.background = isMutedLocal ? "#600" : "#00f3ff";
                 if(!isMutedLocal) led.style.boxShadow = "0 0 12px #00f3ff, inset 0 1px 2px rgba(255,255,255,0.4)";
             } else if(skin === 'vintage') {
@@ -1214,7 +1155,6 @@
                 if(!isMutedLocal) led.style.boxShadow = "0 0 10px #fffb00";
             } else if(skin === 'cyberpunk') {
                 handle.style.background = "linear-gradient(145deg, #09090e, #141423)";
-                handle.style.border = "1px solid #39ff14";
                 led.style.background = isMutedLocal ? "#ff0055" : "#39ff14";
                 if(!isMutedLocal) led.style.boxShadow = "0 0 15px #39ff14";
             }
@@ -1224,19 +1164,14 @@
             const btn = document.getElementById('hardware-mute-switch');
             btn.onclick = () => {
                 isMutedLocal = !isMutedLocal;
-                if(isMutedLocal) {
-                    btn.classList.add('muted');
-                } else {
-                    btn.classList.remove('muted');
-                }
+                if(isMutedLocal) btn.classList.add('muted');
+                else btn.classList.remove('muted');
+                
                 if(myLocalStream) {
                     myLocalStream.getAudioTracks().forEach(t => t.enabled = !isMutedLocal);
                 }
-                // Update indicateur LED local
                 const activeSkin = document.querySelector('.mic-skin-selector .active')?.innerText.toLowerCase() || 'modern';
                 setMicSkin(activeSkin.includes('rétro') ? 'vintage' : activeSkin);
-                
-                // Signalement via DataChannel à la console
                 sendDataToHost({type: 'MUTE_STATUS', value: isMutedLocal});
             };
         }
@@ -1245,7 +1180,7 @@
             const container = document.getElementById('engraving-container');
             const lbl = document.getElementById('lbl-mic-name');
             
-            container.onclick = (e) => {
+            container.onclick = () => {
                 if(document.getElementById('txt-mic-rename')) return;
                 const input = document.createElement('input');
                 input.id = 'txt-mic-rename';
@@ -1255,9 +1190,7 @@
                 input.focus();
                 
                 input.onblur = () => {
-                    if(input.value.trim() !== "") {
-                        micCustomName = input.value.toUpperCase();
-                    }
+                    if(input.value.trim() !== "") micCustomName = input.value.toUpperCase();
                     lbl.innerText = micCustomName;
                     lbl.style.display = 'inline';
                     input.remove();
@@ -1278,9 +1211,7 @@
                 const file = e.target.files[0];
                 if(!file) return;
                 const reader = new FileReader();
-                reader.onload = (event) => {
-                    createStickerElement(event.target.result);
-                };
+                reader.onload = (event) => { createStickerElement(event.target.result); };
                 reader.readAsDataURL(file);
             };
         }
@@ -1308,7 +1239,6 @@
             btnDel.innerText = '×';
             btnDel.onclick = (e) => { e.stopPropagation(); wrapper.remove(); };
 
-            // Poignée combinée UNIQUE (Resize + Rotation)
             const btnHandle = document.createElement('div');
             btnHandle.className = 'sticker-btn sticker-handle';
             btnHandle.innerText = '⤗';
@@ -1322,8 +1252,6 @@
             if(activeSelectedSticker) activeSelectedSticker.classList.remove('selected');
             activeSelectedSticker = wrapper;
 
-            // --- GESTIONNAIRES TACTILES INTELLIGENTS ET UNIFIÉS ---
-            // 1. Drag Déplacement
             wrapper.onmousedown = (e) => {
                 if(e.target.classList.contains('sticker-btn')) return;
                 e.stopPropagation();
@@ -1331,40 +1259,31 @@
                 activeSelectedSticker = wrapper;
                 wrapper.classList.add('selected');
 
-                let startX = e.clientX;
-                let startY = e.clientY;
-                let initX = state.x;
-                let initY = state.y;
+                let startX = e.clientX; let startY = e.clientY;
+                let initX = state.x; let initY = state.y;
 
-                document.onmousemove = (moveEvent) => {
-                    state.x = initX + (moveEvent.clientX - startX);
-                    state.y = initY + (moveEvent.clientY - startY);
+                document.onmousemove = (mv) => {
+                    state.x = initX + (mv.clientX - startX);
+                    state.y = initY + (mv.clientY - startY);
                     wrapper.style.left = `${state.x}px`;
                     wrapper.style.top = `${state.y}px`;
                 };
                 document.onmouseup = () => { document.onmousemove = null; document.onmouseup = null; };
             };
 
-            // 2. Traitement combiné (Echelle + Rotation mathématique) via le bouton unique
             btnHandle.onmousedown = (e) => {
                 e.stopPropagation();
                 let rect = wrapper.getBoundingClientRect();
-                // Centre invariant du composant sticker
                 let centerX = rect.left + rect.width / 2;
                 let centerY = rect.top + rect.height / 2;
-
                 let initDiagonal = Math.hypot(e.clientX - centerX, e.clientY - centerY);
-                let initWidth = state.w;
-                let initHeight = state.h;
+                let initWidth = state.w; let initHeight = state.h;
                 let initAngle = Math.atan2(e.clientY - centerY, e.clientX - centerX) - state.r;
 
-                document.onmousemove = (moveEvent) => {
-                    // Calcul de la rotation
-                    let currentAngle = Math.atan2(moveEvent.clientY - centerY, moveEvent.clientX - centerX);
+                document.onmousemove = (mv) => {
+                    let currentAngle = Math.atan2(mv.clientY - centerY, mv.clientX - centerX);
                     state.r = currentAngle - initAngle;
-
-                    // Calcul de la mise à l'échelle proportionnelle
-                    let currentDiagonal = Math.hypot(moveEvent.clientX - centerX, moveEvent.clientY - centerY);
+                    let currentDiagonal = Math.hypot(mv.clientX - centerX, mv.clientY - centerY);
                     let ratio = currentDiagonal / initDiagonal;
                     state.w = Math.max(25, initWidth * ratio);
                     state.h = Math.max(25, initHeight * ratio);
@@ -1373,11 +1292,10 @@
                     wrapper.style.height = `${state.h}px`;
                     wrapper.style.transform = `rotate(${state.r}rad)`;
                 };
-
                 document.onmouseup = () => { document.onmousemove = null; document.onmouseup = null; };
             };
 
-            // Support des terminaux tactiles
+            // Touch events support
             wrapper.addEventListener('touchstart', (e) => {
                 if(e.target.classList.contains('sticker-btn')) return;
                 if(activeSelectedSticker) activeSelectedSticker.classList.remove('selected');
@@ -1395,9 +1313,7 @@
                     wrapper.style.top = `${state.y}px`;
                 };
                 wrapper.addEventListener('touchmove', touchMoveHandler);
-                wrapper.addEventListener('touchend', () => {
-                    wrapper.removeEventListener('touchmove', touchMoveHandler);
-                }, {once: true});
+                wrapper.addEventListener('touchend', () => { wrapper.removeEventListener('touchmove', touchMoveHandler); }, {once: true});
             });
 
             btnHandle.addEventListener('touchstart', (e) => {
@@ -1424,13 +1340,10 @@
                     wrapper.style.transform = `rotate(${state.r}rad)`;
                 };
                 btnHandle.addEventListener('touchmove', touchMoveCombo);
-                btnHandle.addEventListener('touchend', () => {
-                    btnHandle.removeEventListener('touchmove', touchMoveCombo);
-                }, {once: true});
+                btnHandle.addEventListener('touchend', () => { btnHandle.removeEventListener('touchmove', touchMoveCombo); }, {once: true});
             });
         }
 
-        // Désélection des boutons de transformation lors d'un clic en dehors
         document.getElementById('view-microphone').addEventListener('mousedown', (e) => {
             if(!e.target.closest('.sticker-wrapper') && activeSelectedSticker) {
                 activeSelectedSticker.classList.remove('selected');
@@ -1439,7 +1352,7 @@
         });
 
         // ========================================================
-        // ENGINE 3 : LOGIQUE CONSOLE DE MIXAGE (HOST / AUDIO)
+        // ENGINE 3 : TABLE DE MIXAGE (HOST / AUDIO)
         // ========================================================
         let pageIndicesScroller = 0;
         let activeLightPeerConnection = null;
@@ -1465,24 +1378,18 @@
         }
 
         function buildAudioHardwareTopology(trackId, stream) {
-            if(!audioCtxHost) {
-                audioCtxHost = new (window.AudioContext || window.webkitAudioContext)();
-            }
-            
+            if(!audioCtxHost) audioCtxHost = new (window.AudioContext || window.webkitAudioContext)();
             let source = audioCtxHost.createMediaStreamSource(stream);
             
-            // Égalisation 3 bandes (BiquadFilters)
             let eqLow = audioCtxHost.createBiquadFilter(); eqLow.type = "lowshelf"; eqLow.frequency.value = 200;
             let eqMid = audioCtxHost.createBiquadFilter(); eqMid.type = "peaking"; eqMid.frequency.value = 2000;
             let eqHigh = audioCtxHost.createBiquadFilter(); eqHigh.type = "highshelf"; eqHigh.frequency.value = 8000;
             
-            // Noeuds de Gain & Analyseurs volumétriques
             let volumeNode = audioCtxHost.createGain();
-            let monitorRoutingNode = audioCtxHost.createGain(); // Nœud d'isolation pour monitoring natif
+            let monitorRoutingNode = audioCtxHost.createGain(); 
             let analyserNode = audioCtxHost.createAnalyser();
             analyserNode.fftSize = 32;
 
-            // Connexions de la topologie
             source.connect(eqLow);
             eqLow.connect(eqMid);
             eqMid.connect(eqHigh);
@@ -1491,7 +1398,6 @@
             volumeNode.connect(analyserNode);
             volumeNode.connect(monitorRoutingNode);
             
-            // LE ROUTAGE NATIF (Actif par défaut)
             monitorRoutingNode.connect(audioCtxHost.destination);
             monitorRoutingNode.gain.value = 1.0; 
 
@@ -1503,7 +1409,6 @@
                 analyser: analyserNode
             };
 
-            // Injecte visuellement les tranches matérielles dans l'IHM multipage
             appendHardwareStripToDOM(trackId);
             runVUMeterEngine(trackId);
         }
@@ -1513,7 +1418,6 @@
             const p2 = document.getElementById('advanced-tracks-container');
             const label = connectedPeers[id]?.name || `MICRO #${id.substring(0,3)}`;
 
-            // 1. Tranche simplifiée (Page 1)
             const strip1 = document.createElement('div');
             strip1.className = 'mixer-strip';
             strip1.id = `strip-simple-${id}`;
@@ -1529,7 +1433,6 @@
             `;
             p1.appendChild(strip1);
 
-            // 2. Tranche avancée avec Potentiomètres et Monitoring Natif débrayable (Page 2)
             const strip2 = document.createElement('div');
             strip2.className = 'mixer-strip';
             strip2.id = `strip-adv-${id}`;
@@ -1563,12 +1466,8 @@
         function bindFaderVolume(id, val) {
             const pct = 100 - val;
             const targetGain = val / 100;
+            if(incomingAudioNodes[id]) incomingAudioNodes[id].volume.gain.value = targetGain;
             
-            if(incomingAudioNodes[id]) {
-                incomingAudioNodes[id].volume.gain.value = targetGain;
-            }
-            
-            // Synchronisation physique des potentiomètres IHM
             const kSimple = document.getElementById(`fader-knob-simple-${id}`);
             const kAdv = document.getElementById(`fader-knob-adv-${id}`);
             if(kSimple) kSimple.style.top = `${pct}%`;
@@ -1579,8 +1478,7 @@
             const btn = document.getElementById(`btn-mute-${id}`);
             if(!incomingAudioNodes[id]) return;
             
-            const isCurrentlyMuted = btn.classList.contains('active');
-            if(!isCurrentlyMuted) {
+            if(!btn.classList.contains('active')) {
                 btn.classList.add('active');
                 incomingAudioNodes[id].volume.gain.value = 0;
             } else {
@@ -1593,17 +1491,16 @@
             const btn = document.getElementById(`btn-monitor-${id}`);
             if(!incomingAudioNodes[id]) return;
             
-            const isMonitoringNodeActive = btn.classList.contains('monitor-active');
-            if(isMonitoringNodeActive) {
+            if(btn.classList.contains('monitor-active')) {
                 btn.classList.remove('monitor-active');
                 btn.style.borderColor = "#111";
                 btn.innerText = "MONITOR OFF";
-                incomingAudioNodes[id].monitor.gain.value = 0.0; // Coupe l'écoute locale en pièce
+                incomingAudioNodes[id].monitor.gain.value = 0.0;
             } else {
                 btn.classList.add('monitor-active');
-                btn.style.borderColor = var(--neon-green);
+                btn.style.borderColor = "var(--neon-green)"; // FIX : Variable CSS correctement entourée de guillemets
                 btn.innerText = "MONITOR ON";
-                incomingAudioNodes[id].monitor.gain.value = 1.0; // Rétablit le flux
+                incomingAudioNodes[id].monitor.gain.value = 1.0;
             }
         }
 
@@ -1622,12 +1519,9 @@
                 let volumePercent = (total / bufferLength) / 140 * 100;
                 
                 if(bar) bar.style.height = `${Math.min(100, volumePercent)}%`;
-                
-                // Si une liaison lumière P2P est configurée, envoi en flux de l'amplitude globale RMS
                 if(activeLightPeerConnection) {
                     activeLightPeerConnection.send({type: 'AMPLITUDE_DATA', value: volumePercent / 100});
                 }
-                
                 requestAnimationFrame(draw);
             }
             draw();
@@ -1639,16 +1533,15 @@
             let currentRotation = 0;
             const targetPointer = e.target.querySelector('.knob-pointer') || e.target;
 
-            document.onmousemove = (moveEvent) => {
-                let deltaY = startY - moveEvent.clientY; // Déplacement vertical du pointeur
+            document.onmousemove = (mv) => {
+                let deltaY = startY - mv.clientY;
                 currentRotation = Math.min(135, Math.max(-135, currentRotation + deltaY));
-                startY = moveEvent.clientY;
+                startY = mv.clientY;
                 
                 if(targetPointer) targetPointer.style.transform = `translateX(-50%) rotate(${currentRotation}deg)`;
                 
-                // Si lié à une égalisation physique de la console
                 if(peerId && incomingAudioNodes[peerId]) {
-                    let gainVal = (currentRotation / 135) * 12; // Mappe entre -12dB et +12dB
+                    let gainVal = (currentRotation / 135) * 12;
                     if(frequencyBand === 'low') incomingAudioNodes[peerId].eq.low.gain.value = gainVal;
                     if(frequencyBand === 'mid') incomingAudioNodes[peerId].eq.mid.gain.value = gainVal;
                     if(frequencyBand === 'high') incomingAudioNodes[peerId].eq.high.gain.value = gainVal;
@@ -1666,7 +1559,6 @@
                 let clickPositionPercent = (e.clientX - rect.left) / rect.width * 100;
                 cursor.style.left = `${clickPositionPercent}%`;
                 
-                // Conversion empirique de la position en spectre hexadécimal de couleur pour injection réseau
                 let hue = Math.round((clickPositionPercent / 100) * 360);
                 if(activeLightPeerConnection) {
                     activeLightPeerConnection.send({type: 'COLOR_SHIFT', value: `hsl(${hue}, 100%, 50%)`});
@@ -1674,24 +1566,17 @@
             };
         }
 
-        function zoomFX(module) {
-            module.classList.toggle('zoomed');
-        }
-        function toggleFX(e, btn) {
-            e.stopPropagation();
-            btn.classList.toggle('active');
-        }
+        function zoomFX(module) { module.classList.toggle('zoomed'); }
+        function toggleFX(e, btn) { e.stopPropagation(); btn.classList.toggle('active'); }
 
         // ========================================================
-        // ENGINE 4 : SOURCE DE LUMIÈRE SCÉNIQUE & PANNEAU 3D FLIP
+        // ENGINE 4 : SOURCE DE LUMIÈRE & FLIP 3D
         // ========================================================
         let lightGlobalMode = "brat";
         let localIntensityLimit = 1.0;
 
         function initLightSourceEngine() {
             setupLight3DFlipTriggers();
-            
-            // Connexion automatique s'il y a un hash dans l'URL d'appel
             const targetHost = window.location.hash.replace('#', '');
             initPeerConnection(false, targetHost);
         }
@@ -1701,11 +1586,9 @@
             const front = document.getElementById('light-canvas-front');
             const btnCloseBack = document.getElementById('btn-close-backpanel');
 
-            // Double clic avant pour retourner le boîtier métallique
             front.ondblclick = () => { card.classList.add('flipped'); };
             btnCloseBack.onclick = () => { card.classList.remove('flipped'); };
 
-            // Slider local de gestion d'intensité matérielle
             const slider = document.getElementById('local-bright-slider');
             const cursor = document.getElementById('local-bright-cursor');
             slider.onclick = (e) => {
@@ -1723,23 +1606,17 @@
             const infoText = document.getElementById('light-text-info');
             if(infoText) infoText.style.display = 'none';
 
-            if(data.type === 'COLOR_SHIFT') {
-                if(lightGlobalMode === 'ambient') {
-                    front.style.background = data.value;
-                }
+            if(data.type === 'COLOR_SHIFT' && lightGlobalMode === 'ambient') {
+                front.style.background = data.value;
             }
             if(data.type === 'AMPLITUDE_DATA') {
                 let amp = data.value;
-                
                 if(lightGlobalMode === 'brat') {
-                    // Mode Brat : Mutation de couleur chaotique aléatoire sur impulsions
                     if(amp > 0.45) {
                         let colors = ['#8ACE00', '#000000', '#ffffff'];
-                        let pick = colors[Math.floor(Math.random() * colors.length)];
-                        front.style.background = pick;
+                        front.style.background = colors[Math.floor(Math.random() * colors.length)];
                     }
                 } else if(lightGlobalMode === 'strobe') {
-                    // Mode Stroboscope standard réactif au volume
                     front.style.background = `rgba(255,255,255, ${amp * localIntensityLimit})`;
                 }
             }
@@ -1753,38 +1630,30 @@
         }
 
         // ========================================================
-        // ENGINE 5 : PROTOCOLE RÉSEAU P2P SANS SERVEUR (WEBRTC)
+        // ENGINE 5 : RESEAU P2P WEBRTC
         // ========================================================
         function initPeerConnection(isHost = false, targetRoomId = null) {
-            // Instanciation de l'architecture PeerJS via serveurs de courtage cloud publics
             peerInstance = new Peer(null, { debug: 1 });
 
             peerInstance.on('open', (id) => {
                 p2pRoomId = id;
                 if(isHost) {
                     document.getElementById('connection-room-badge').innerText = `ROOM ID: ${id}`;
-                    // Génération instantanée du QR Code d'appairage local
                     const gatewayUrl = `${window.location.origin}${window.location.pathname}#${id}`;
                     new QRCode(document.getElementById("gateway-qrcode"), {
                         text: gatewayUrl,
                         width: 100, height: 100
                     });
                 } else if(targetRoomId) {
-                    // Le client initie la poignée de main WebRTC immédiatement
                     executeP2PHandshakeLink(targetRoomId);
                 }
             });
 
             if(isHost) {
-                // Écoute de l'Hôte pour flux Audio ET DataChannels entonnoir
-                peerInstance.on('connection', (conn) => {
-                    handleIncomingDataChannel(conn);
-                });
+                peerInstance.on('connection', (conn) => { handleIncomingDataChannel(conn); });
                 peerInstance.on('call', (call) => {
-                    call.answer(null); // L'hôte reçoit le flux sans renvoyer sa propre caméra
-                    call.on('stream', (remoteStream) => {
-                        buildAudioHardwareTopology(call.peer, remoteStream);
-                    });
+                    call.answer(null);
+                    call.on('stream', (remoteStream) => { buildAudioHardwareTopology(call.peer, remoteStream); });
                 });
             }
         }
@@ -1793,7 +1662,6 @@
             const statusNode = document.getElementById('mic-network-status');
             const lightInfo = document.getElementById('light-text-info');
             
-            // 1. Ouvre le canal d'ordonnancement de données (DataChannel)
             let dataConn = peerInstance.connect(hostId);
             connectedPeers[hostId] = { dataChannel: dataConn };
 
@@ -1803,12 +1671,9 @@
                     statusNode.className = "mic-status-node connected";
                 }
                 if(lightInfo) lightInfo.innerText = "LIAISON LUMIÈRE COMMENCÉE";
-                
-                // Envoi du type d'entité connecté pour routage intelligent côté régie
                 dataConn.send({type: 'REGISTER_DEVICE', mode: currentMode, name: micCustomName});
             });
 
-            // Si client en mode Source de Lumière, il écoute les directives de la console
             if(currentMode === 'light-source') {
                 dataConn.on('data', (data) => {
                     if(data.type === 'SET_LIGHT_MODE') lightGlobalMode = data.value;
@@ -1816,14 +1681,13 @@
                 });
             }
 
-            // 2. Si client en mode Micro, capture du flux matériel et transmission WebRTC
             if(currentMode === 'microphone') {
                 navigator.mediaDevices.getUserMedia({ audio: { echoCancellation: false, noiseSuppression: false } })
                     .then((stream) => {
                         myLocalStream = stream;
                         peerInstance.call(hostId, stream);
                     })
-                    .catch(err => alert("Veuillez autoriser l'accès au microphone pour émettre le flux."));
+                    .catch(() => alert("Accès micro requis pour émettre le flux."));
             }
         }
 
@@ -1831,10 +1695,8 @@
             conn.on('data', (data) => {
                 if(data.type === 'REGISTER_DEVICE') {
                     connectedPeers[conn.peer] = { dataChannel: conn, mode: data.mode, name: data.name };
-                    
                     if(data.mode === 'light-source') {
                         activeLightPeerConnection = conn;
-                        // Débloque dynamiquement la Page 5 de régie de lumière sur le mixeur
                         document.getElementById('mx-page-light').style.display = 'block';
                         document.getElementById('dot-light-page').style.display = 'block';
                         document.getElementById('lbl-light-status').innerText = "MATRIX SYNCHRONISÉE";
@@ -1857,9 +1719,7 @@
 
         function sendDataToHost(packet) {
             for(let pId in connectedPeers) {
-                if(connectedPeers[pId].dataChannel) {
-                    connectedPeers[pId].dataChannel.send(packet);
-                }
+                if(connectedPeers[pId].dataChannel) connectedPeers[pId].dataChannel.send(packet);
             }
         }
     </script>
