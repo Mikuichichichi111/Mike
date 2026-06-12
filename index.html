@@ -2,447 +2,1866 @@
 <html lang="fr">
 <head>
     <meta charset="UTF-8">
-    <title>Karaoké P2P - Table de Mixage & Micro</title>
-    <script src="https://cdn.jsdelivr.net/npm/peerjs@1.4.7/dist/peerjs.min.js"></script>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Studio Live - Console P2P</title>
+    
+    <!-- Bibliothèques distantes pour le P2P et QR Code -->
+    <script src="https://unpkg.com/peerjs@1.5.2/dist/peerjs.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+
     <style>
         :root {
-            --bg-color: #1e1e1e;
-            --mixer-bg: #2a2a2c;
-            --fader-track: #111;
-            --highlight: #ff5e00;
+            --bg-spotify: #121212;
+            --panel-color: #1e1e24;
+            --panel-border: #2a2a32;
+            --metal-grad: linear-gradient(145deg, #2e2e36, #15151a);
+            --neon-cyan: #00f3ff;
+            --neon-green: #39ff14;
+            --brat-green: #8ACE00;
+            --lavender-accent: #b19ffb;
         }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            user-select: none;
+            -webkit-user-select: none;
+        }
+
         body {
-            margin: 0; padding: 20px; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            background-color: var(--bg-color); color: #ddd; display: flex; flex-direction: column; align-items: center;
-        }
-        .hidden { display: none !important; }
-        
-        /* Styles Skeuomorphiques */
-        .btn-skeuo {
-            background: linear-gradient(180deg, #444, #222);
-            border: 2px solid #111; border-radius: 8px;
-            box-shadow: 0 4px 6px rgba(0,0,0,0.5), inset 0 2px 2px rgba(255,255,255,0.1);
-            color: #eee; padding: 15px 30px; font-size: 16px; font-weight: bold;
-            cursor: pointer; text-transform: uppercase; transition: all 0.1s;
-        }
-        .btn-skeuo:active {
-            transform: translateY(3px);
-            box-shadow: 0 1px 2px rgba(0,0,0,0.5), inset 0 2px 4px rgba(0,0,0,0.4);
-        }
-        .btn-skeuo.active { background: linear-gradient(180deg, var(--highlight), #aa3c00); }
-
-        .mixer-panel {
-            background: linear-gradient(135deg, #333, #222); border-radius: 12px;
-            box-shadow: 10px 10px 30px rgba(0,0,0,0.8), inset 0 2px 5px rgba(255,255,255,0.05);
-            padding: 20px; display: flex; gap: 20px; overflow-x: auto; border: 1px solid #111;
-        }
-        
-        .channel-strip {
-            background: #252525; padding: 15px; border-radius: 6px;
-            box-shadow: inset 0 0 10px rgba(0,0,0,0.5); border: 1px solid #1a1a1a;
-            display: flex; flex-direction: column; align-items: center; gap: 15px; min-width: 80px;
+            background-color: var(--bg-spotify);
+            color: #ffffff;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            overflow: hidden;
+            width: 100vw;
+            height: 100vh;
         }
 
-        /* Fader CSS (Skeuomorphisme) */
-        input[type=range] {
-            -webkit-appearance: none; width: 120px; background: transparent; transform: rotate(-90deg); margin: 60px -40px;
+        /* Texture de tissu acoustique style Spotify en arrière-plan global */
+        .acoustic-texture {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            z-index: 1;
+            opacity: 0.04;
+            pointer-events: none;
+            background-image: radial-gradient(#ffffff 1px, transparent 0), radial-gradient(#ffffff 1px, transparent 0);
+            background-size: 4px 4px;
+            background-position: 0 0, 2px 2px;
         }
-        input[type=range]:focus { outline: none; }
-        input[type=range]::-webkit-slider-runnable-track {
-            width: 100%; height: 8px; cursor: pointer;
-            background: #000; border-radius: 4px; box-shadow: inset 0 2px 4px rgba(0,0,0,0.9);
-            border: 1px solid #222;
+
+        .view {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+            z-index: 2;
+            display: none;
         }
-        input[type=range]::-webkit-slider-thumb {
-            box-shadow: 0 4px 6px rgba(0,0,0,0.6), inset 0 2px 4px rgba(255,255,255,0.3);
-            border: 1px solid #111; height: 35px; width: 20px; border-radius: 4px;
-            background: linear-gradient(90deg, #555, #888, #555);
-            cursor: pointer; -webkit-appearance: none; margin-top: -14px;
+
+        .view.active {
+            display: block;
+        }
+
+        /* --- BOUTON DE SORTIE GLOBAL "X" --- */
+        .btn-close {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            background: var(--metal-grad);
+            border: 2px solid #3a3a45;
+            box-shadow: inset 0 1px 3px rgba(255,255,255,0.2), 0 4px 8px rgba(0,0,0,0.5);
+            color: #ff4a4a;
+            font-size: 18px;
+            font-weight: bold;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            z-index: 9999;
+            transition: transform 0.1s;
+        }
+        .btn-close:active {
+            transform: scale(0.9);
+            box-shadow: inset 0 2px 4px rgba(0,0,0,0.6);
+        }
+
+        /* ========================================== */
+        /* 1. MENU D'ACCUEIL                          */
+        /* ========================================== */
+        #view-menu {
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            background: radial-gradient(circle at center, #1c1c24 0%, #0a0a0f 100%);
+            padding: 20px;
+        }
+
+        .menu-title {
+            font-size: 28px;
+            font-weight: 800;
+            margin-bottom: 40px;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            text-align: center;
+            background: linear-gradient(45deg, #ffffff, var(--lavender-accent));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .menu-grid {
+            display: flex;
+            gap: 25px;
+            width: 100%;
+            max-width: 900px;
+            height: 320px;
+        }
+
+        .menu-card {
+            flex: 1;
+            border-radius: 16px;
+            cursor: pointer;
+            position: relative;
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+            border: 2px solid rgba(255, 255, 255, 0.05);
+            box-shadow: 0 15px 35px rgba(0,0,0,0.5), inset 0 1px 0 rgba(255,255,255,0.1);
+            transition: transform 0.3s cubic-bezier(0.25, 1, 0.5, 1), box-shadow 0.3s;
+        }
+
+        .menu-card:hover {
+            transform: translateY(-8px);
+        }
+
+        .card-mic { background: linear-gradient(135deg, #1d2b44 0%, #0f172a 100%); --accent: var(--neon-cyan); }
+        .card-mixer { background: linear-gradient(135deg, #2d1f3d 0%, #170f24 100%); --accent: var(--lavender-accent); }
+        .card-light { background: linear-gradient(135deg, #1f331e 0%, #0a1409 100%); --accent: var(--brat-green); }
+
+        .menu-card::before {
+            content: '';
+            position: absolute;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: radial-gradient(circle at center, var(--accent) 0%, transparent 70%);
+            opacity: 0.15;
+            transition: opacity 0.3s;
+        }
+
+        .menu-card:hover::before { opacity: 0.3; }
+
+        .card-icon {
+            width: 80px;
+            height: 80px;
+            margin-bottom: 20px;
+            fill: none;
+            stroke: currentColor;
+            stroke-width: 1.5;
+            color: #ffffff;
+        }
+        .menu-card:hover .card-icon { color: var(--accent); }
+
+        .card-label {
+            font-size: 20px;
+            font-weight: 700;
+            margin-bottom: 8px;
+            text-transform: uppercase;
+        }
+        .card-desc {
+            font-size: 13px;
+            color: #8a8a9e;
+            text-align: center;
+            line-height: 1.4;
+        }
+
+        /* ========================================== */
+        /* 2. INTERFACE MICROPHONE (SKEUOMORPHISME)   */
+        /* ========================================== */
+        #view-microphone {
+            background: linear-gradient(to bottom, #18181f, #0c0c0e);
+        }
+
+        .mic-container {
+            position: relative;
+            width: 100%;
+            height: 100%;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .mic-wrapper {
+            position: relative;
+            width: 320px;
+            height: 600px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        /* Tête du Micro (Grille) */
+        .mic-head {
+            position: relative;
+            width: 160px;
+            height: 160px;
+            z-index: 5;
+            transition: all 0.5s ease;
+        }
+
+        /* Bague LED physique */
+        .mic-led-ring {
+            position: absolute;
+            bottom: -5px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 116px;
+            height: 12px;
+            border-radius: 6px;
+            background: #111;
+            z-index: 6;
+            box-shadow: inset 0 1px 3px rgba(0,0,0,0.8);
+            transition: background 0.3s, box-shadow 0.3s;
+        }
+
+        /* Manche métallique principal */
+        .mic-handle-wrapper {
+            position: relative;
+            width: 110px;
+            height: 320px;
+            margin-top: -2px;
+            z-index: 4;
+        }
+
+        .mic-handle-base {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            border-radius: 0 0 20px 20px;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.6);
+            transition: background 0.5s;
+        }
+
+        /* ZONE ACTIVE POUR LES STICKERS (Couche Médiane Sandwich) */
+        .mic-sticker-zone {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            border-radius: 0 0 20px 20px;
+            overflow: hidden;
+            z-index: 2;
+            pointer-events: none;
+        }
+
+        /* LE MASQUE DE RELIEF ET D'OMBRE CYLINDRIQUE (Couche Haute Sandwich) */
+        .mic-shadow-overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            border-radius: 0 0 20px 20px;
+            background: linear-gradient(to right, 
+                rgba(0,0,0,0.85) 0%, 
+                rgba(0,0,0,0.3) 15%, 
+                rgba(255,255,255,0.15) 45%, 
+                rgba(255,255,255,0.15) 55%, 
+                rgba(0,0,0,0.4) 85%, 
+                rgba(0,0,0,0.9) 100%);
+            z-index: 3;
+            pointer-events: none;
+            mix-blend-mode: multiply;
+        }
+
+        /* Éléments de contrôle physiques sur le manche */
+        .mic-controls {
+            position: absolute;
+            top: 40px;
+            left: 50%;
+            transform: translateX(-50%);
+            z-index: 10;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        /* Switch à glissière mécanique */
+        .switch-plate {
+            width: 32px;
+            height: 85px;
+            background: linear-gradient(145deg, #18181c, #2a2a30);
+            border: 2px solid #111;
+            border-radius: 6px;
+            position: relative;
+            box-shadow: inset 0 2px 5px rgba(0,0,0,0.7), 0 1px 1px rgba(255,255,255,0.1);
+            cursor: pointer;
+        }
+
+        .switch-knob {
+            width: 24px;
+            height: 35px;
+            background: linear-gradient(to bottom, #7a7a85 0%, #484850 50%, #282830 100%);
+            border-radius: 4px;
+            position: absolute;
+            left: 2px;
+            top: 4px;
+            box-shadow: 0 3px 6px rgba(0,0,0,0.6), inset 0 1px 0 rgba(255,255,255,0.3);
+            border: 1px solid #1c1c20;
+            transition: top 0.15s cubic-bezier(0.25, 1, 0.5, 1);
+        }
+        .switch-knob::before {
+            content: '';
+            position: absolute;
+            top: 50%; left: 3px; right: 3px; height: 3px;
+            background: #111; margin-top: -5px;
+            box-shadow: 0 4px 0 #111, 0 -4px 0 #111;
+        }
+
+        .switch-plate.muted .switch-knob {
+            top: 42px;
+        }
+
+        /* Gravure discrète du nom du micro */
+        .mic-engraving {
+            position: absolute;
+            bottom: 25px;
+            left: 0;
+            width: 100%;
+            text-align: center;
+            font-size: 11px;
+            font-weight: 700;
+            letter-spacing: 2px;
+            color: rgba(255, 255, 255, 0.22);
+            text-shadow: 1px 1px 1px rgba(255,255,255,0.05), -1px -1px 1px rgba(0,0,0,0.6);
+            text-transform: uppercase;
+            cursor: text;
+            z-index: 10;
+        }
+        .mic-engraving input {
+            background: transparent;
+            border: none;
+            color: #ffffff;
+            text-align: center;
+            font-size: 11px;
+            font-weight: 700;
+            letter-spacing: 2px;
+            text-transform: uppercase;
+            outline: none;
+            width: 80%;
+        }
+
+        /* Style des Stickers Mobiles */
+        .sticker-wrapper {
+            position: absolute;
+            pointer-events: auto;
+            cursor: move;
+        }
+        .sticker-wrapper.selected .sticker-border {
+            border: 1.5px dashed var(--neon-cyan);
+        }
+        .sticker-img {
+            width: 100%;
+            height: 100%;
+            object-fit: contain;
+            display: block;
+        }
+        .sticker-border {
+            position: absolute;
+            top: -4px; left: -4px; right: -4px; bottom: -4px;
+            pointer-events: none;
+        }
+        .sticker-btn {
+            position: absolute;
+            width: 18px;
+            height: 18px;
+            border-radius: 50%;
+            display: none;
+            align-items: center;
+            justify-content: center;
+            font-size: 10px;
+            font-weight: bold;
+            pointer-events: auto;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.5);
+        }
+        .sticker-wrapper.selected .sticker-btn {
+            display: flex;
+        }
+        .sticker-del {
+            top: -10px; right: -10px;
+            background: #ff3b30; color: white; cursor: pointer;
+        }
+        .sticker-handle {
+            bottom: -10px; right: -10px;
+            background: var(--neon-cyan); color: black; cursor: nwse-resize;
+        }
+
+        /* Presets Visuels Micro */
+        .mic-skin-selector {
+            position: absolute;
+            bottom: 30px;
+            display: flex;
+            gap: 12px;
+            background: rgba(0,0,0,0.4);
+            padding: 8px 16px;
+            border-radius: 30px;
+            border: 1px solid rgba(255,255,255,0.05);
+            backdrop-filter: blur(10px);
+            z-index: 100;
+        }
+        .skin-btn {
+            padding: 6px 14px;
+            font-size: 12px;
+            font-weight: 600;
+            background: var(--metal-grad);
+            border: 1px solid #333;
+            color: #8a8a9e;
+            border-radius: 20px;
+            cursor: pointer;
+        }
+        .skin-btn.active {
+            color: white;
+            border-color: var(--lavender-accent);
+            box-shadow: 0 0 10px rgba(177, 159, 251, 0.3);
+        }
+
+        /* Infos de connexion Micro */
+        .mic-status-node {
+            position: absolute;
+            top: 30px;
+            left: 30px;
+            font-size: 12px;
+            background: rgba(0,0,0,0.5);
+            padding: 8px 14px;
+            border-radius: 8px;
+            border-left: 3px solid #ff3b30;
+        }
+        .mic-status-node.connected {
+            border-left-color: var(--neon-green);
+        }
+
+        /* ========================================== */
+        /* 3. TABLE DE MIXAGE (INTERFACE PLEIN ÉCRAN) */
+        /* ========================================== */
+        .mixer-window {
+            width: 100%;
+            height: 100%;
+            display: flex;
+            flex-direction: column;
+            background: #0d0d11;
+        }
+
+        /* Système de Swipe Horizontal (Scroll Snap) */
+        .mixer-pages-container {
+            flex: 1;
+            display: flex;
+            overflow-x: auto;
+            scroll-snap-type: x mandatory;
+            scrollbar-width: none;
+        }
+        .mixer-pages-container::-webkit-scrollbar { display: none; }
+
+        .mixer-page {
+            width: 100vw;
+            height: 100%;
+            flex-shrink: 0;
+            scroll-snap-align: start;
+            padding: 25px;
+            overflow-y: auto;
             position: relative;
         }
-        .knob-container { display: flex; flex-direction: column; align-items: center; gap: 5px; font-size: 11px; color: #888; }
-        .knob { width: 40px; margin: 15px -10px; }
 
-        /* Interface Micro */
-        #micro-interface {
-            width: 300px; height: 500px; position: relative; margin-top: 20px;
+        .page-header {
+            margin-bottom: 25px;
+            border-bottom: 1px solid var(--panel-border);
+            padding-bottom: 12px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
         }
-        .sticker { position: absolute; cursor: grab; max-width: 80px; filter: drop-shadow(0 4px 4px rgba(0,0,0,0.5)); }
-        .sticker:active { cursor: grabbing; }
-
-        #lyrics-display {
-            font-size: 24px; font-weight: bold; color: var(--highlight); text-align: center;
-            min-height: 40px; margin: 20px 0; text-shadow: 0 2px 4px rgba(0,0,0,0.8);
+        .page-header h2 {
+            font-size: 22px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            color: #e2e2ec;
         }
 
-        .controls-group { display: flex; gap: 10px; margin-bottom: 20px; align-items: center;}
-        input[type=text], input[type=file] {
-            padding: 10px; background: #111; border: 1px solid #333; color: #eee; border-radius: 4px;
+        /* Tranches de console (Mélangeur) */
+        .tracks-deck {
+            display: flex;
+            gap: 20px;
+            height: calc(100% - 60px);
+            align-items: stretch;
+        }
+
+        .mixer-strip {
+            width: 130px;
+            background: var(--metal-grad);
+            border: 1px solid var(--panel-border);
+            border-radius: 12px;
+            padding: 15px 10px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            box-shadow: 0 10px 20px rgba(0,0,0,0.4);
+        }
+
+        .strip-name {
+            font-size: 12px;
+            font-weight: 700;
+            color: var(--lavender-accent);
+            margin-bottom: 15px;
+            text-transform: uppercase;
+        }
+
+        /* VU-mètre physique */
+        .vu-meter-slot {
+            width: 14px;
+            height: 80px;
+            background: #0a0a0d;
+            border-radius: 3px;
+            border: 1px solid #222;
+            position: relative;
+            overflow: hidden;
+            margin-bottom: 15px;
+            box-shadow: inset 0 2px 4px rgba(0,0,0,0.8);
+        }
+        .vu-bar {
+            position: absolute;
+            bottom: 0;
+            width: 100%;
+            height: 0%;
+            background: linear-gradient(to top, #00ff00 0%, #ffff00 75%, #ff0000 100%);
+            transition: height 0.05s linear;
+        }
+
+        /* Fader de volume vertical skeuomorphique */
+        .fader-rack {
+            flex: 1;
+            width: 30px;
+            position: relative;
+            background: rgba(0,0,0,0.2);
+            border-radius: 15px;
+            border-left: 2px solid #111;
+            border-right: 2px solid #222;
+            margin: 10px 0;
+            display: flex;
+            justify-content: center;
+        }
+        .fader-track-line {
+            position: absolute;
+            width: 2px;
+            height: 90%;
+            top: 5%;
+            background: #000;
+        }
+        .fader-handle-input {
+            position: absolute;
+            width: 34px;
+            height: 100%;
+            top: 0;
+            opacity: 0;
+            cursor: pointer;
+            writing-mode: bt-lr; /* Vertical standard navigation workaround */
+            -webkit-appearance: slider-vertical;
+        }
+        .fader-knob-physical {
+            position: absolute;
+            width: 36px;
+            height: 22px;
+            background: linear-gradient(to bottom, #666 0%, #333 45%, #111 50%, #444 55%, #222 100%);
+            border: 1px solid #000;
+            border-radius: 3px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.6), inset 0 1px 0 rgba(255,255,255,0.2);
+            pointer-events: none;
+            left: 50%;
+            transform: translate(-50%, -11px);
+        }
+        .fader-knob-physical::before {
+            content: '';
+            position: absolute;
+            top: 10px; left: 0; right: 0; height: 2px;
+            background: #ff3b30;
+            box-shadow: 0 0 4px #ff3b30;
+        }
+
+        /* Potentiomètres rotatifs (Knobs) */
+        .knobs-row {
+            display: flex;
+            gap: 15px;
+            margin-bottom: 20px;
+        }
+        .knob-container {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            font-size: 10px;
+            color: #8a8a9e;
+        }
+        .rotary-knob {
+            width: 38px;
+            height: 38px;
+            border-radius: 50%;
+            background: radial-gradient(circle at center, #444 0%, #1a1a20 100%);
+            border: 2px solid #111;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.4), inset 0 1px 0 rgba(255,255,255,0.1);
+            position: relative;
+            margin-bottom: 4px;
+            cursor: ns-resize;
+        }
+        .knob-pointer {
+            position: absolute;
+            top: 4px;
+            left: 50%;
+            width: 2px;
+            height: 10px;
+            background: var(--neon-cyan);
+            transform-origin: bottom center;
+            transform: translateX(-50%) rotate(0deg);
+        }
+
+        /* Bouton carré de Mute / Monitoring */
+        .btn-square-hardware {
+            width: 44px;
+            height: 32px;
+            background: linear-gradient(145deg, #3a3a45, #1e1e24);
+            border: 2px solid #111;
+            border-radius: 4px;
+            color: #8a8a9e;
+            font-size: 10px;
+            font-weight: 700;
+            text-transform: uppercase;
+            cursor: pointer;
+            box-shadow: 0 3px 5px rgba(0,0,0,0.5), inset 0 1px 0 rgba(255,255,255,0.1);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-top: 10px;
+        }
+        .btn-square-hardware.active {
+            background: linear-gradient(145deg, #1e1e24, #111);
+            color: #ff3b30;
+            box-shadow: inset 0 2px 4px rgba(0,0,0,0.6);
+            border-color: #ff3b30;
+            text-shadow: 0 0 5px rgba(255,59,48,0.4);
+        }
+        .btn-square-hardware.monitor-active {
+            color: var(--neon-green);
+            border-color: var(--neon-green);
+        }
+
+        /* Rack d'Effets (Page 3) */
+        .fx-rack-deck {
+            display: flex;
+            gap: 20px;
+            flex-wrap: wrap;
+        }
+        .fx-module {
+            width: 180px;
+            height: 220px;
+            background: var(--metal-grad);
+            border: 2px solid var(--panel-border);
+            border-radius: 14px;
+            padding: 15px;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            box-shadow: 0 12px 25px rgba(0,0,0,0.5);
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        /* Effet de zoom plein écran lors du double-clic */
+        .fx-module.zoomed {
+            position: fixed;
+            top: 10%; left: 10%; width: 80vw; height: 80vh;
+            z-index: 10000;
+            background: #17171e;
+            padding: 40px;
+        }
+
+        .fx-title {
+            font-size: 14px;
+            font-weight: 800;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            border-bottom: 1px solid rgba(255,255,255,0.1);
+            padding-bottom: 6px;
+        }
+
+        /* Page Plus Modulaire (Page 4) */
+        .btn-page-plus {
+            width: 100px;
+            height: 100px;
+            border-radius: 20px;
+            border: 3px dashed #3a3a45;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 36px;
+            color: #3a3a45;
+            cursor: pointer;
+            position: absolute;
+            top: 50%; left: 50%;
+            transform: translate(-50%, -50%);
+            transition: all 0.2s;
+        }
+        .btn-page-plus:hover {
+            border-color: var(--lavender-accent);
+            color: var(--lavender-accent);
+        }
+
+        /* Banderole LED Basse de Contrôle Lumineux */
+        .mixer-light-bar-control {
+            height: 70px;
+            background: #13131a;
+            border-top: 2px solid var(--panel-border);
+            padding: 10px 25px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+        .color-spectrum-banner {
+            flex: 1;
+            height: 24px;
+            border-radius: 6px;
+            background: linear-gradient(to right, #ff0000, #ffff00, #00ff00, #00ffff, #0000ff, #ff00ff, #ff0000);
+            margin: 0 20px;
+            position: relative;
+            cursor: pointer;
+            border: 1px solid #000;
+        }
+        .spectrum-indicator {
+            position: absolute;
+            top: -3px;
+            width: 6px;
+            height: 30px;
+            background: #fff;
+            border: 1px solid #000;
+            border-radius: 2px;
+            pointer-events: none;
+        }
+
+        /* Infos Salle d'Attente Mixer */
+        .mixer-gateway-card {
+            background: var(--metal-grad);
+            padding: 20px;
+            border-radius: 12px;
+            border: 1px solid var(--panel-border);
+            display: flex;
+            gap: 25px;
+            align-items: center;
+            margin-bottom: 25px;
+        }
+        .qr-holder {
+            width: 100px;
+            height: 100px;
+            background: white;
+            padding: 5px;
+            border-radius: 6px;
+        }
+
+        /* Barres de pagination persistantes au bas du mixeur */
+        .mixer-breadcrumbs {
+            display: flex;
+            justify-content: center;
+            gap: 8px;
+            padding: 10px 0;
+            background: #0d0d11;
+        }
+        .breadcrumb-dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: #2a2a35;
+            transition: background 0.2s;
+        }
+        .breadcrumb-dot.active {
+            background: var(--lavender-accent);
+            box-shadow: 0 0 6px var(--lavender-accent);
+        }
+
+        /* ========================================== */
+        /* 4. SOURCE DE LUMIÈRE (EFFET FLIP 3D)       */
+        /* ========================================== */
+        #view-light-source {
+            perspective: 1400px; /* Perspective pour effet 3D complet */
+            background: #000;
+        }
+        .flip-card-3d-spatial {
+            width: 100%;
+            height: 100%;
+            position: relative;
+            transform-style: preserve-3d;
+            transition: transform 0.8s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+        .flip-card-3d-spatial.flipped {
+            transform: rotateY(180deg);
+        }
+        .light-face {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            backface-visibility: hidden;
+            -webkit-backface-visibility: hidden;
+        }
+        
+        /* Face Lumineuse (Avant) */
+        .light-face-front {
+            background: #000;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .light-video-layer {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.5s;
+        }
+
+        /* Face Réglages Métalliques (Arrière) */
+        .light-face-back {
+            transform: rotateY(180deg);
+            background: radial-gradient(circle at center, #2c2c35 0%, #15151a 100%);
+            padding: 40px;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            border: 10px solid #111;
         }
     </style>
 </head>
 <body>
 
-    <svg width="0" height="0" class="hidden">
-        <defs>
-            <linearGradient id="metal" x1="0%" y1="0%" x2="100%" y2="0%">
-                <stop offset="0%" stop-color="#555" />
-                <stop offset="50%" stop-color="#aaa" />
-                <stop offset="100%" stop-color="#333" />
-            </linearGradient>
-            <filter id="shadow" x="-20%" y="-20%" width="140%" height="140%">
-                <feDropShadow dx="2" dy="4" stdDeviation="3" flood-opacity="0.6"/>
-            </filter>
-            <pattern id="mesh" width="4" height="4" patternUnits="userSpaceOnUse">
-                <circle cx="2" cy="2" r="1.5" fill="#111" />
-            </pattern>
-        </defs>
-    </svg>
+    <div class="acoustic-texture"></div>
 
-    <div id="home-page">
-        <h1 style="text-align:center;">Karaoké P2P Local</h1>
-        <div style="display:flex; gap:20px; justify-content:center; margin-top:40px;">
-            <button class="btn-skeuo" onclick="app.init('mixer')">🎛️ Devenir Table de Mixage</button>
-            <button class="btn-skeuo" onclick="app.init('micro')">🎤 Devenir un Micro</button>
-        </div>
-        <div id="error-log" style="color: #ff5555; margin-top:20px; text-align:center;"></div>
-    </div>
+    <!-- 0. BOUTON CLOSE UNIQUE -->
+    <button id="global-close-btn" class="btn-close" style="display:none;">X</button>
 
-    <div id="micro-controls" class="hidden">
-        <h2>🎤 Mode Micro</h2>
-        <div class="controls-group">
-            <input type="text" id="target-mixer-id" placeholder="ID de la Table de mixage">
-            <button class="btn-skeuo" onclick="app.connectMicroToMixer()">Connecter</button>
-            <button id="btn-mute" class="btn-skeuo" onclick="app.toggleMute()">Mute</button>
-        </div>
-        <div class="controls-group">
-            <label>Ajouter un Sticker (PNG) :</label>
-            <input type="file" id="sticker-upload" accept="image/png">
-        </div>
-        
-        <div id="lyrics-display">En attente de la musique...</div>
-
-        <div id="micro-interface" ondrop="app.dropSticker(event)" ondragover="event.preventDefault()">
-            <svg width="100%" height="100%" viewBox="0 0 100 200">
-                <rect x="40" y="80" width="20" height="100" rx="5" fill="url(#metal)" filter="url(#shadow)"/>
-                <circle cx="50" cy="50" r="30" fill="url(#metal)" filter="url(#shadow)"/>
-                <circle cx="50" cy="50" r="30" fill="url(#mesh)" opacity="0.8"/>
-                <path d="M 25 50 A 25 25 0 0 0 75 50" fill="none" stroke="#222" stroke-width="4"/>
-            </svg>
+    <!-- ========================================== -->
+    <!-- 1. VUE MENU PRINCIPAL                      -->
+    <!-- ========================================== */ -->
+    <div id="view-menu" class="view active">
+        <h1 class="menu-title">LAVENDER CORE AUDIO</h1>
+        <div class="menu-grid">
+            <div class="menu-card card-mic" onclick="switchView('microphone')">
+                <svg class="card-icon" viewBox="0 0 24 24"><path d="M12 2a3 3 0 0 0-3 3v7a3 3 0 0 0 6 0V5a3 3 0 0 0-3-3Z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2M12 19v3M8 22h8"/></svg>
+                <div class="card-label">Mode Micro</div>
+                <div class="card-desc">Transforme l'appareil en micro sans-fil haute fidélité avec skins physiques et stickers d'enroulement 3D.</div>
+            </div>
+            <div class="menu-card card-mixer" onclick="switchView('mixer')">
+                <svg class="card-icon" viewBox="0 0 24 24"><path d="M4 10h16M4 14h16M9 2v6M15 2v6M9 16v6M15 16v6"/><circle cx="9" cy="5" r="2"/><circle cx="15" cy="7" r="2"/><circle cx="12" cy="12" r="2"/><circle cx="9" cy="18" r="2"/><circle cx="15" cy="20" r="2"/></svg>
+                <div class="card-label">Table Mixage</div>
+                <div class="card-desc">Console studio multipage plein écran. Monitoring natif, faders physiques, racks d'effets extensibles et routeur lumière.</div>
+            </div>
+            <div class="menu-card card-light" onclick="switchView('light-source')">
+                <svg class="card-icon" viewBox="0 0 24 24"><path d="M12 2v2M12 20v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M2 12h2M20 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42"/><circle cx="12" cy="12" r="5"/></svg>
+                <div class="card-label">Source Lumineuse</div>
+                <div class="card-desc">Diffuseur d'ambiance stroboscopique à 100% d'éclat. Synchro sonore P2P et mode Brat exclusif avec panneau Flip 3D.</div>
+            </div>
         </div>
     </div>
 
-    <div id="mixing-desk-controls" class="hidden">
-        <h2>🎛️ Table de Mixage (Votre ID : <span id="my-mixer-id" style="color:var(--highlight)">Chargement...</span>)</h2>
+    <!-- ========================================== -->
+    <!-- 2. VUE INTERFACE MICROPHONE                -->
+    <!-- ========================================== -->
+    <div id="view-microphone" class="view">
+        <div class="mic-status-node" id="mic-network-status">Déconnecté</div>
         
-        <div class="controls-group" style="background:#222; padding:15px; border-radius:8px;">
-            <div>
-                <label>Musique (MP3) :</label> <input type="file" id="audio-file" accept="audio/*">
-            </div>
-            <div>
-                <label>Paroles (LRC) :</label> <input type="file" id="lrc-file" accept=".lrc">
-            </div>
-            <div>
-                <input type="checkbox" id="vocal-remove-cb" onchange="app.toggleVocalRemover(this.checked)">
-                <label for="vocal-remove-cb">Isoler Instrumental (Notch)</label>
-            </div>
-            <div>
-                <input type="checkbox" id="copyright-cb">
-                <label for="copyright-cb">Copyright (Bloquer Rec)</label>
-            </div>
-            <button class="btn-skeuo" onclick="app.startKaraoke()">▶ Lire</button>
-            <button class="btn-skeuo" id="btn-record" onclick="app.toggleRecording()">🔴 REC Instru</button>
-        </div>
+        <div class="mic-container">
+            <div class="mic-wrapper">
+                <!-- Tête du micro vectorielle complexe -->
+                <svg class="mic-head" id="mic-head-svg" viewBox="0 0 120 120">
+                    <defs>
+                        <!-- Grille Standard Mesh -->
+                        <pattern id="grid-pattern" width="6" height="6" patternUnits="userSpaceOnUse">
+                            <path d="M 0 3 L 6 3 M 3 0 L 3 6" fill="none" stroke="#222" stroke-width="0.8"/>
+                            <path d="M 0 0 L 6 6 M 6 0 L 0 6" fill="none" stroke="#666" stroke-width="0.4"/>
+                        </pattern>
+                        <!-- Sphère Chrome dégradé -->
+                        <radialGradient id="sphere-grad" cx="35%" cy="35%" r="65%">
+                            <stop offset="0%" stop-color="#fff" stop-opacity="0.9"/>
+                            <stop offset="40%" stop-color="#ccc"/>
+                            <stop offset="80%" stop-color="#555"/>
+                            <stop offset="100%" stop-color="#222"/>
+                        </radialGradient>
+                        <linearGradient id="chrome-light" x1="0%" y1="0%" x2="100%" y2="100%">
+                            <stop offset="0%" stop-color="#999"/>
+                            <stop offset="20%" stop-color="#fff"/>
+                            <stop offset="40%" stop-color="#555"/>
+                            <stop offset="65%" stop-color="#fff"/>
+                            <stop offset="100%" stop-color="#111"/>
+                        </linearGradient>
+                    </defs>
+                    <!-- Corps Grille principale -->
+                    <circle cx="60" cy="55" r="45" fill="url(#sphere-grad)"/>
+                    <circle cx="60" cy="55" r="45" fill="url(#grid-pattern)" opacity="0.9"/>
+                    <!-- Anneau central métallique -->
+                    <rect x="12" y="92" width="96" height="14" rx="3" fill="url(#chrome-light)" stroke="#111" stroke-width="1"/>
+                </svg>
 
-        <audio id="karaoke-audio" class="hidden"></audio>
+                <!-- Bague Lumineuse LED -->
+                <div class="mic-led-ring" id="mic-led-indicator"></div>
 
-        <div class="mixer-panel" id="mixer-tracks">
-            <div class="channel-strip" id="master-strip">
-                <strong style="color:var(--highlight)">MASTER</strong>
-                <div class="knob-container">
-                    <span>Reverb</span>
-                    <input type="range" class="knob" min="0" max="1" step="0.01" value="0.2" oninput="app.updateMasterFX('reverb', this.value)">
+                <!-- Ensemble Manche (Sandwich) -->
+                <div class="mic-handle-wrapper" id="mic-handle-zone">
+                    <!-- Base Métal (Couche Basse) -->
+                    <div class="mic-handle-base" id="mic-handle-texture" style="background: linear-gradient(to right, #333, #555 30%, #aaa 50%, #555 70%, #222 100%);"></div>
+                    
+                    <!-- Zone active pour Stickers (Couche Médiane) -->
+                    <div class="mic-sticker-zone" id="sticker-runtime-destination"></div>
+                    
+                    <!-- Masque d'Ombre Cylindrique (Couche Haute) -->
+                    <div class="mic-shadow-overlay"></div>
+
+                    <!-- Contrôles physiques intégrés -->
+                    <div class="mic-controls">
+                        <div class="switch-plate" id="hardware-mute-switch">
+                            <div class="switch-knob"></div>
+                        </div>
+                    </div>
+
+                    <!-- Gravure Discrète Nom -->
+                    <div class="mic-engraving" id="engraving-container">
+                        <span id="lbl-mic-name">MIC #01</span>
+                    </div>
                 </div>
-                <input type="range" min="0" max="2" step="0.01" value="1" oninput="app.updateMasterVolume(this.value)">
-                <span>VOL</span>
             </div>
+            
+            <!-- Sélecteur de skins physiques -->
+            <div class="mic-skin-selector">
+                <button class="skin-btn active" onclick="setMicSkin('modern')">Moderne</button>
+                <button class="skin-btn" onclick="setMicSkin('vintage')">Rétro 50s</button>
+                <button class="skin-btn" onclick="setMicSkin('cyberpunk')">Cyberpunk</button>
+            </div>
+        </div>
+        <!-- Input invisible pour import fichiers images -->
+        <input type="file" id="hidden-file-input" accept="image/*" style="display:none;">
+    </div>
+
+    <!-- ========================================== -->
+    <!-- 3. VUE TABLE DE MIXAGE                     -->
+    <!-- ========================================== -->
+    <div id="view-mixer" class="view">
+        <div class="mixer-window">
+            
+            <!-- Pages Container (Défilement Horizontal Snap) -->
+            <div class="mixer-pages-container" id="mixer-pages-scroller">
+                
+                <!-- PAGE 1 : GÉNÉRALE / DÉBUTANT -->
+                <div class="mixer-page" id="mx-page-1">
+                    <div class="page-header">
+                        <h2>Console Principale - Accès Direct</h2>
+                        <div id="connection-room-badge" style="font-size:12px; font-weight:bold; color:var(--neon-cyan);">ID: CHERCHE...</div>
+                    </div>
+
+                    <!-- Passerelle d'accueil Réseau Local -->
+                    <div class="mixer-gateway-card">
+                        <div class="qr-holder" id="gateway-qrcode"></div>
+                        <div>
+                            <h4 style="margin-bottom:6px; font-size:15px;">Connecter des périphériques externes</h4>
+                            <p style="font-size:12px; color:#8a8a9e; line-height:1.4;">Scannez ce QR Code avec vos smartphones pour les appairer instantanément en tant que Micros sans-fil ou Modules de lumière de scène.</p>
+                        </div>
+                    </div>
+
+                    <!-- Liste des tranches de mixage simplifiées -->
+                    <div class="tracks-deck" id="simple-tracks-container">
+                        <!-- Généré dynamiquement lors des connexions peers -->
+                    </div>
+                </div>
+
+                <!-- PAGE 2 : AVANCÉE (INGÉNIEUR SON) -->
+                <div class="mixer-page" id="mx-page-2">
+                    <div class="page-header">
+                        <h2>Égalisation & Gains Avancés</h2>
+                    </div>
+                    <div class="tracks-deck" id="advanced-tracks-container">
+                        <!-- Tranches de réglages fins physiques générées ici -->
+                    </div>
+                </div>
+
+                <!-- PAGE 3 : RACK D'EFFETS VIRTUELS -->
+                <div class="mixer-page" id="mx-page-3">
+                    <div class="page-header">
+                        <h2>Rack de Périphériques FX Dynamiques</h2>
+                    </div>
+                    <div class="fx-rack-deck">
+                        <!-- Module Écho / Delay -->
+                        <div class="fx-module" ondblclick="zoomFX(this)">
+                            <div class="fx-title">Tape Delay Pro</div>
+                            <div class="knobs-row" style="margin-top:20px;">
+                                <div class="knob-container">
+                                    <div class="rotary-knob" onmousedown="handleKnob(event, 'delay-time')"><div class="knob-pointer"></div></div>
+                                    <span>TIME</span>
+                                </div>
+                                <div class="knob-container">
+                                    <div class="rotary-knob" onmousedown="handleKnob(event, 'delay-feedback')"><div class="knob-pointer"></div></div>
+                                    <span>FEEDBACK</span>
+                                </div>
+                            </div>
+                            <button class="btn-square-hardware" onclick="toggleFX(event, this)">FX ON</button>
+                        </div>
+                        
+                        <!-- Module Reverb Spatial -->
+                        <div class="fx-module" ondblclick="zoomFX(this)">
+                            <div class="fx-title">Studio Reverb</div>
+                            <div class="knobs-row" style="margin-top:20px;">
+                                <div class="knob-container">
+                                    <div class="rotary-knob" onmousedown="handleKnob(event, 'reverb-room')"><div class="knob-pointer"></div></div>
+                                    <span>ROOM</span>
+                                </div>
+                                <div class="knob-container">
+                                    <div class="rotary-knob" onmousedown="handleKnob(event, 'reverb-mix')"><div class="knob-pointer"></div></div>
+                                    <span>MIX</span>
+                                </div>
+                            </div>
+                            <button class="btn-square-hardware" onclick="toggleFX(event, this)">FX ON</button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- PAGE 4 : CONFIGURATION PERSONNALISÉE (+) -->
+                <div class="mixer-page" id="mx-page-4">
+                    <div class="page-header">
+                        <h2>Espace Personnalisé</h2>
+                    </div>
+                    <div class="btn-page-plus" id="btn-custom-macro">+</div>
+                </div>
+
+                <!-- PAGE 5 : CONTRÔLE LUMIÈRE INTERNE (DYNAMIQUE) -->
+                <div class="mixer-page" id="mx-page-light" style="display:none;">
+                    <div class="page-header">
+                        <h2>Régie Générale Lumière & Scène</h2>
+                    </div>
+                    <div style="background:rgba(0,0,0,0.3); padding:20px; border-radius:10px; border:1px solid #222;">
+                        <h4 style="margin-bottom:15px; font-size:14px; text-transform:uppercase;">Animations Prédéfinies</h4>
+                        <div style="display:flex; gap:10px; margin-bottom:25px;">
+                            <button class="skin-btn active" onclick="sendLightCommand('mode', 'brat')">Mode BRAT</button>
+                            <button class="skin-btn" onclick="sendLightCommand('mode', 'strobe')">Stroboscope Vocal</button>
+                            <button class="skin-btn" onclick="sendLightCommand('mode', 'ambient')">Ambiance Fixe</button>
+                        </div>
+                        <h4 style="margin-bottom:10px; font-size:14px; text-transform:uppercase;">Vitesse de Pulsation</h4>
+                        <div class="fader-rack" style="height:150px; width:40px; margin:20px 0;">
+                            <div class="fader-track-line"></div>
+                            <input type="range" min="1" max="100" value="50" class="fader-handle-input" id="light-speed-slider">
+                            <div class="fader-knob-physical" style="top:50%;"></div>
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+
+            <!-- Banderole Basse de Contrôle Couleur Fluide -->
+            <div class="mixer-light-bar-control">
+                <span style="font-size:11px; font-weight:700; color:#8a8a9e;">TEINTE MATRIX</span>
+                <div class="color-spectrum-banner" id="spectrum-slider">
+                    <div class="spectrum-indicator" id="spectrum-cursor" style="left:50%;"></div>
+                </div>
+                <span style="font-size:11px; font-weight:700; color:var(--neon-green);" id="lbl-light-status">LUMIÈRE DISPONIBLE</span>
+            </div>
+
+            <!-- Pagination Visual Dots -->
+            <div class="mixer-breadcrumbs" id="mixer-dots-panel">
+                <div class="breadcrumb-dot active"></div>
+                <div class="breadcrumb-dot"></div>
+                <div class="breadcrumb-dot"></div>
+                <div class="breadcrumb-dot"></div>
+                <div class="breadcrumb-dot" id="dot-light-page" style="display:none;"></div>
+            </div>
+
         </div>
     </div>
 
+    <!-- ========================================== -->
+    <!-- 4. VUE INTERFACE SOURCE DE LUMIÈRE         -->
+    <!-- ========================================== -->
+    <div id="view-light-source" class="view">
+        <div class="flip-card-3d-spatial" id="light-3d-card">
+            
+            <!-- FACE AVANT : ÉCRAN PROJECTION LUMINEUX MAXIMAL -->
+            <div class="light-face light-face-front" id="light-canvas-front">
+                <div id="light-text-info" style="font-size:14px; color:rgba(255,255,255,0.4); font-weight:bold; letter-spacing:1px;">EN ATTENTE DE LA REGIE P2P...</div>
+                <!-- Couche vidéo loop optionnelle -->
+                <video class="light-video-layer" id="light-loop-video" loop muted playsinline src=""></video>
+            </div>
+
+            <!-- FACE ARRIÈRE : POTENTIOMÈTRES & RÉGLAGES PHYSIQUES LOCAUX -->
+            <div class="light-face light-face-back">
+                <div>
+                    <h2 style="font-size:18px; letter-spacing:1px; border-bottom:1px solid #444; padding-bottom:8px; margin-bottom:20px; color:var(--brat-green)">MODULE ARRIÈRE - BACK PANEL</h2>
+                    
+                    <div style="margin-bottom:25px;">
+                        <label style="font-size:11px; color:#8a8a9e; display:block; margin-bottom:8px; font-weight:bold;">LUMINOSITÉ MAXIMALE DE SÉCURITÉ</label>
+                        <div class="color-spectrum-banner" style="background:#222;" id="local-bright-slider">
+                            <div class="spectrum-indicator" style="left:100%; background:var(--brat-green)" id="local-bright-cursor"></div>
+                        </div>
+                    </div>
+
+                    <div style="margin-bottom:25px;">
+                        <label style="font-size:11px; color:#8a8a9e; display:block; margin-bottom:8px; font-weight:bold;">COMMUTATEUR DE CONTRÔLE</label>
+                        <div style="display:flex; gap:10px;">
+                            <button class="skin-btn active" id="btn-mode-auto">AUTO REGINA</button>
+                            <button class="skin-btn" id="btn-mode-force">FORCE BRAT LOCAL</button>
+                        </div>
+                    </div>
+
+                    <div style="margin-bottom:25px;">
+                        <label style="font-size:11px; color:#8a8a9e; display:block; margin-bottom:5px; font-weight:bold;">GAIN CAPTEUR AUDIO INTERNE</label>
+                        <div class="knob-container" style="align-items:flex-start;">
+                            <div class="rotary-knob" onmousedown="handleKnob(event, 'local-mic-gain')"><div class="knob-pointer"></div></div>
+                        </div>
+                    </div>
+                </div>
+
+                <button class="btn-square-hardware" style="width:100%; height:45px; font-size:12px; border-color:var(--brat-green); color:#fff;" id="btn-close-backpanel">VALIDER LES FLUX</button>
+            </div>
+
+        </div>
+    </div>
+
+    <!-- ========================================== -->
+    <!-- CORE LOGIC ARCHITECTURE (JAVASCRIPT)       -->
+    <!-- ========================================== -->
     <script>
-        const app = {
-            role: null, peer: null, localStream: null, connections: [],
-            audioCtx: null, masterGain: null, karaokeSource: null, vocalRemover: null, delayNode: null,
-            mediaRecorder: null, recordedChunks: [], recDestination: null,
-            lyrics: [], currentLyricIndex: -1, dataChannels: [],
+        // --- ETAT CONFIGURATION ET ROUTAGE GLOBALE ---
+        let currentMode = 'menu';
+        let peerInstance = null;
+        let p2pRoomId = '';
+        let connectedPeers = {};
+        
+        // Modules Web Audio API
+        let audioCtxHost = null;
+        let incomingAudioNodes = {}; 
 
-            log: (msg) => document.getElementById('error-log').innerText = msg,
+        // Gestionnaire de Stickers
+        let activeSelectedSticker = null;
 
-            init: async function(selectedRole) {
-                if (!window.RTCPeerConnection || !navigator.mediaDevices) {
-                    return this.log("Erreur : WebRTC non supporté par ce navigateur.");
-                }
-                this.role = selectedRole;
-                document.getElementById('home-page').classList.add('hidden');
-                
-                try {
-                    if (this.role === 'micro') {
-                        document.getElementById('micro-controls').classList.remove('hidden');
-                        this.localStream = await navigator.mediaDevices.getUserMedia({ audio: true, video: false });
-                        this.initPeer();
-                        this.initStickerDrag();
-                    } else {
-                        document.getElementById('mixing-desk-controls').classList.remove('hidden');
-                        this.initAudioContext();
-                        this.initPeer();
-                    }
-                } catch (err) {
-                    this.log("Erreur d'accès : " + err.message + " (SSL/localhost requis pour le micro)");
-                }
-            },
-
-            initPeer: function() {
-                this.peer = new Peer({ debug: 2 }); 
-                this.peer.on('open', id => {
-                    if (this.role === 'mixer') document.getElementById('my-mixer-id').innerText = id;
-                });
-                
-                this.peer.on('error', err => this.log("Erreur PeerJS: " + err.type));
-
-                if (this.role === 'mixer') {
-                    this.peer.on('connection', conn => {
-                        this.dataChannels.push(conn);
-                        conn.on('data', data => { /* handle data if needed */ });
-                    });
-                    this.peer.on('call', call => {
-                        call.answer(); 
-                        call.on('stream', remoteStream => this.addMixerTrack(call.peer, remoteStream));
-                    });
-                } else {
-                    this.peer.on('connection', conn => {
-                        conn.on('data', data => {
-                            if(data.type === 'lyric') document.getElementById('lyrics-display').innerText = data.text;
-                        });
-                    });
-                }
-            },
-
-            connectMicroToMixer: function() {
-                const targetId = document.getElementById('target-mixer-id').value;
-                if (!targetId) return this.log("ID manquant");
-                
-                const conn = this.peer.connect(targetId);
-                const call = this.peer.call(targetId, this.localStream);
-                call.on('error', err => this.log("Erreur d'appel. Même réseau?"));
-            },
-
-            toggleMute: function() {
-                if (!this.localStream) return;
-                const audioTrack = this.localStream.getAudioTracks()[0];
-                audioTrack.enabled = !audioTrack.enabled;
-                const btn = document.getElementById('btn-mute');
-                btn.classList.toggle('active');
-                btn.innerText = audioTrack.enabled ? "Mute" : "Unmute";
-            },
-
-            /* --- WEBAUDIO API (MIXER) --- */
-            initAudioContext: function() {
-                const AudioContext = window.AudioContext || window.webkitAudioContext;
-                this.audioCtx = new AudioContext();
-                this.masterGain = this.audioCtx.createGain();
-                
-                // Simple Delay for global "Reverb" effect
-                this.delayNode = this.audioCtx.createDelay();
-                this.delayNode.delayTime.value = 0.15;
-                const feedback = this.audioCtx.createGain();
-                feedback.gain.value = 0.2;
-                this.delayNode.connect(feedback);
-                feedback.connect(this.delayNode);
-                
-                this.delayNode.connect(this.masterGain);
-                this.masterGain.connect(this.audioCtx.destination);
-
-                // For recording ONLY instrumental
-                this.recDestination = this.audioCtx.createMediaStreamDestination();
-            },
-
-            addMixerTrack: function(peerId, stream) {
-                if(this.audioCtx.state === 'suspended') this.audioCtx.resume();
-
-                const strip = document.createElement('div');
-                strip.className = 'channel-strip';
-                strip.innerHTML = `
-                    <strong>MIC ${peerId.substring(0,4)}</strong>
-                    <div class="knob-container"><span>HI</span><input type="range" class="knob" min="-15" max="15" value="0" id="hi-${peerId}"></div>
-                    <div class="knob-container"><span>MID</span><input type="range" class="knob" min="-15" max="15" value="0" id="mid-${peerId}"></div>
-                    <div class="knob-container"><span>LOW</span><input type="range" class="knob" min="-15" max="15" value="0" id="low-${peerId}"></div>
-                    <input type="range" min="0" max="2" step="0.01" value="1" id="vol-${peerId}">
-                    <button class="btn-skeuo" style="padding:5px 10px; font-size:10px;" id="mute-${peerId}">M</button>
-                `;
-                document.getElementById('mixer-tracks').insertBefore(strip, document.getElementById('master-strip'));
-
-                const source = this.audioCtx.createMediaStreamSource(stream);
-                const low = this.audioCtx.createBiquadFilter(); low.type = "lowshelf"; low.frequency.value = 250;
-                const mid = this.audioCtx.createBiquadFilter(); mid.type = "peaking"; mid.frequency.value = 1000; mid.Q.value = 1;
-                const hi = this.audioCtx.createBiquadFilter(); hi.type = "highshelf"; hi.frequency.value = 4000;
-                const gain = this.audioCtx.createGain();
-
-                source.connect(low); low.connect(mid); mid.connect(hi); hi.connect(gain);
-                gain.connect(this.masterGain);
-                gain.connect(this.delayNode); // Send to global FX
-
-                document.getElementById(`low-${peerId}`).oninput = (e) => low.gain.value = e.target.value;
-                document.getElementById(`mid-${peerId}`).oninput = (e) => mid.gain.value = e.target.value;
-                document.getElementById(`hi-${peerId}`).oninput = (e) => hi.gain.value = e.target.value;
-                document.getElementById(`vol-${peerId}`).oninput = (e) => gain.gain.value = e.target.value;
-                document.getElementById(`mute-${peerId}`).onclick = (e) => {
-                    gain.gain.value = gain.gain.value > 0 ? 0 : document.getElementById(`vol-${peerId}`).value;
-                    e.target.classList.toggle('active');
-                };
-            },
-
-            updateMasterVolume: function(val) { if(this.masterGain) this.masterGain.gain.value = val; },
-            updateMasterFX: function(type, val) { 
-                // Using simple delay node mix trick mapped to knob
-                if(this.delayNode) {
-                    const delayGain = this.audioCtx.createGain();
-                    delayGain.gain.value = val;
-                }
-            },
-
-            /* --- KARAOKE & MEDIA --- */
-            startKaraoke: async function() {
-                if(this.audioCtx.state === 'suspended') this.audioCtx.resume();
-                
-                const audioFile = document.getElementById('audio-file').files[0];
-                const lrcFile = document.getElementById('lrc-file').files[0];
-                if(!audioFile) return this.log("Veuillez charger un fichier audio.");
-
-                const audioEl = document.getElementById('karaoke-audio');
-                audioEl.src = URL.createObjectURL(audioFile);
-                
-                if(!this.karaokeSource) {
-                    this.karaokeSource = this.audioCtx.createMediaElementSource(audioEl);
-                    this.vocalRemover = this.audioCtx.createBiquadFilter();
-                    this.vocalRemover.type = "notch";
-                    this.vocalRemover.frequency.value = 1000; // Fréq vocale moyenne
-                    this.vocalRemover.Q.value = 1.5;
-                    
-                    const karaokeGain = this.audioCtx.createGain();
-                    
-                    // Routing: Source -> Notch (toggleable) -> Gain -> Destination
-                    // And route to REC destination
-                    this.karaokeSource.connect(this.vocalRemover);
-                    this.vocalRemover.connect(karaokeGain);
-                    karaokeGain.connect(this.masterGain);
-                    karaokeGain.connect(this.recDestination); // Record instrumental cleanly
-                }
-
-                if(lrcFile) {
-                    const text = await lrcFile.text();
-                    this.parseLRC(text);
-                }
-
-                audioEl.play();
-                this.syncLyrics(audioEl);
-            },
-
-            toggleVocalRemover: function(active) {
-                if(!this.vocalRemover) return;
-                // Détournement simple : on change le Q pour annuler l'effet si non coché
-                this.vocalRemover.Q.value = active ? 1.5 : 0.0001; 
-            },
-
-            parseLRC: function(lrcText) {
-                this.lyrics = [];
-                const lines = lrcText.split('\n');
-                const regex = /\[(\d{2}):(\d{2}\.\d{2,3})\](.*)/;
-                for(let line of lines) {
-                    const match = regex.exec(line);
-                    if(match) {
-                        const time = parseInt(match[1]) * 60 + parseFloat(match[2]);
-                        this.lyrics.push({ time, text: match[3].trim() });
-                    }
-                }
-            },
-
-            syncLyrics: function(audioEl) {
-                if(this.lyrics.length === 0) return;
-                const update = () => {
-                    const ct = audioEl.currentTime;
-                    let nextIndex = this.lyrics.findIndex(l => l.time > ct);
-                    if(nextIndex === -1) nextIndex = this.lyrics.length;
-                    const currentIndex = nextIndex - 1;
-                    
-                    if(currentIndex !== this.currentLyricIndex && currentIndex >= 0) {
-                        this.currentLyricIndex = currentIndex;
-                        const text = this.lyrics[currentIndex].text;
-                        this.dataChannels.forEach(c => c.send({type: 'lyric', text: text}));
-                    }
-                    if(!audioEl.paused) requestAnimationFrame(update);
-                };
-                update();
-            },
-
-            toggleRecording: function() {
-                const btn = document.getElementById('btn-record');
-                const isCopyright = document.getElementById('copyright-cb').checked;
-                if(isCopyright) {
-                    this.log("Enregistrement bloqué (Copyright).");
-                    return;
-                }
-
-                if(this.mediaRecorder && this.mediaRecorder.state === "recording") {
-                    this.mediaRecorder.stop();
-                    btn.classList.remove('active');
-                    btn.innerText = "🔴 REC Instru";
-                } else {
-                    this.recordedChunks = [];
-                    // Using default webm/ogg for native compatibility & lightweight code
-                    this.mediaRecorder = new MediaRecorder(this.recDestination.stream); 
-                    this.mediaRecorder.ondataavailable = e => { if(e.data.size > 0) this.recordedChunks.push(e.data); };
-                    this.mediaRecorder.onstop = () => {
-                        const blob = new Blob(this.recordedChunks, { type: 'audio/webm' });
-                        const url = URL.createObjectURL(blob);
-                        const a = document.createElement('a');
-                        a.href = url; a.download = 'karaoke-instrumental.webm';
-                        a.click();
-                    };
-                    this.mediaRecorder.start();
-                    btn.classList.add('active');
-                    btn.innerText = "⏹ STOP Rec";
-                }
-            },
-
-            /* --- STICKERS --- */
-            initStickerDrag: function() {
-                document.getElementById('sticker-upload').onchange = (e) => {
-                    const file = e.target.files[0];
-                    if(!file) return;
-                    const img = document.createElement('img');
-                    img.src = URL.createObjectURL(file);
-                    img.className = 'sticker';
-                    img.style.left = '100px'; img.style.top = '100px';
-                    
-                    img.onmousedown = (ev) => {
-                        let shiftX = ev.clientX - img.getBoundingClientRect().left;
-                        let shiftY = ev.clientY - img.getBoundingClientRect().top;
-                        const moveAt = (pageX, pageY) => {
-                            img.style.left = pageX - shiftX + 'px';
-                            img.style.top = pageY - shiftY + 'px';
-                        };
-                        const onMouseMove = (ev) => moveAt(ev.pageX, ev.pageY);
-                        document.addEventListener('mousemove', onMouseMove);
-                        document.onmouseup = () => {
-                            document.removeEventListener('mousemove', onMouseMove);
-                            document.onmouseup = null;
-                        };
-                    };
-                    img.ondragstart = () => false;
-                    document.getElementById('micro-interface').appendChild(img);
-                };
+        // --- ALLUMAGE INITIAL ET ROUTAGE DES VUES ---
+        function switchView(targetView) {
+            document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
+            const dest = document.getElementById(`view-${targetView}`);
+            if(dest) dest.classList.add('active');
+            
+            const closeBtn = document.getElementById('global-close-btn');
+            if(targetView === 'menu') {
+                closeBtn.style.display = 'none';
+                currentMode = 'menu';
+            } else {
+                closeBtn.style.display = 'flex';
+                currentMode = targetView;
+                initModeArchitecture(targetView);
             }
-        };
+        }
+
+        document.getElementById('global-close-btn').addEventListener('click', () => {
+            // Nettoyage des processus réseau s'il y a lieu avant reset
+            switchView('menu');
+        });
+
+        function initModeArchitecture(mode) {
+            if(mode === 'mixer') {
+                initMixerHostEngine();
+            } else if(mode === 'microphone') {
+                initMicrophoneClientEngine();
+            } else if(mode === 'light-source') {
+                initLightSourceEngine();
+            }
+        }
+
+        // ========================================================
+        // ENGINE 2 : LOGIQUE MICROPHONE & GRAPHISMES STICKERS
+        // ========================================================
+        let micCustomName = "MIC #01";
+        let isMutedLocal = false;
+        let myLocalStream = null;
+
+        function initMicrophoneClientEngine() {
+            setMicSkin('modern');
+            setupStickerDoubleTap();
+            setupHardwareMuteSwitch();
+            setupInteractiveRename();
+            
+            // Tente une connexion automatique au serveur hôte local si l'URL contient un hash
+            const targetHost = window.location.hash.replace('#', '');
+            initPeerConnection(false, targetHost);
+        }
+
+        function setMicSkin(skin) {
+            const handle = document.getElementById('mic-handle-texture');
+            const head = document.getElementById('mic-head-svg');
+            const led = document.getElementById('mic-led-indicator');
+            
+            document.querySelectorAll('.skin-btn').forEach(b => b.classList.remove('active'));
+            
+            if(skin === 'modern') {
+                handle.style.background = "linear-gradient(to right, #222, #3a3a42 30%, #555 50%, #3a3a42 70%, #1a1a1f) ";
+                led.style.background = isMutedLocal ? "#600" : "#00f3ff";
+                if(!isMutedLocal) led.style.boxShadow = "0 0 12px #00f3ff, inset 0 1px 2px rgba(255,255,255,0.4)";
+            } else if(skin === 'vintage') {
+                handle.style.background = "linear-gradient(to right, #777, #fff 25%, #999 50%, #fff 75%, #444)";
+                led.style.background = isMutedLocal ? "#400" : "#fffb00";
+                if(!isMutedLocal) led.style.boxShadow = "0 0 10px #fffb00";
+            } else if(skin === 'cyberpunk') {
+                handle.style.background = "linear-gradient(145deg, #09090e, #141423)";
+                handle.style.border = "1px solid #39ff14";
+                led.style.background = isMutedLocal ? "#ff0055" : "#39ff14";
+                if(!isMutedLocal) led.style.boxShadow = "0 0 15px #39ff14";
+            }
+        }
+
+        function setupHardwareMuteSwitch() {
+            const btn = document.getElementById('hardware-mute-switch');
+            btn.onclick = () => {
+                isMutedLocal = !isMutedLocal;
+                if(isMutedLocal) {
+                    btn.classList.add('muted');
+                } else {
+                    btn.classList.remove('muted');
+                }
+                if(myLocalStream) {
+                    myLocalStream.getAudioTracks().forEach(t => t.enabled = !isMutedLocal);
+                }
+                // Update indicateur LED local
+                const activeSkin = document.querySelector('.mic-skin-selector .active')?.innerText.toLowerCase() || 'modern';
+                setMicSkin(activeSkin.includes('rétro') ? 'vintage' : activeSkin);
+                
+                // Signalement via DataChannel à la console
+                sendDataToHost({type: 'MUTE_STATUS', value: isMutedLocal});
+            };
+        }
+
+        function setupInteractiveRename() {
+            const container = document.getElementById('engraving-container');
+            const lbl = document.getElementById('lbl-mic-name');
+            
+            container.onclick = (e) => {
+                if(document.getElementById('txt-mic-rename')) return;
+                const input = document.createElement('input');
+                input.id = 'txt-mic-rename';
+                input.value = micCustomName;
+                lbl.style.display = 'none';
+                container.appendChild(input);
+                input.focus();
+                
+                input.onblur = () => {
+                    if(input.value.trim() !== "") {
+                        micCustomName = input.value.toUpperCase();
+                    }
+                    lbl.innerText = micCustomName;
+                    lbl.style.display = 'inline';
+                    input.remove();
+                    sendDataToHost({type: 'RENAME', value: micCustomName});
+                };
+                input.onkeydown = (e) => { if(e.key === 'Enter') input.blur(); };
+            };
+        }
+
+        function setupStickerDoubleTap() {
+            const handleZone = document.getElementById('mic-handle-zone');
+            handleZone.ondblclick = (e) => {
+                if(e.target !== handleZone && e.target.id !== 'mic-handle-texture') return;
+                document.getElementById('hidden-file-input').click();
+            };
+
+            document.getElementById('hidden-file-input').onchange = (e) => {
+                const file = e.target.files[0];
+                if(!file) return;
+                const reader = new FileReader();
+                reader.onload = (event) => {
+                    createStickerElement(event.target.result);
+                };
+                reader.readAsDataURL(file);
+            };
+        }
+
+        function createStickerElement(src) {
+            const zone = document.getElementById('sticker-runtime-destination');
+            const wrapper = document.createElement('div');
+            wrapper.className = 'sticker-wrapper selected';
+            wrapper.style.left = '30px';
+            wrapper.style.top = '100px';
+            wrapper.style.width = '60px';
+            wrapper.style.height = '60px';
+            
+            let state = { x: 30, y: 100, w: 60, h: 60, r: 0 };
+
+            const img = document.createElement('img');
+            img.src = src;
+            img.className = 'sticker-img';
+            
+            const border = document.createElement('div');
+            border.className = 'sticker-border';
+
+            const btnDel = document.createElement('div');
+            btnDel.className = 'sticker-btn sticker-del';
+            btnDel.innerText = '×';
+            btnDel.onclick = (e) => { e.stopPropagation(); wrapper.remove(); };
+
+            // Poignée combinée UNIQUE (Resize + Rotation)
+            const btnHandle = document.createElement('div');
+            btnHandle.className = 'sticker-btn sticker-handle';
+            btnHandle.innerText = '⤗';
+
+            wrapper.appendChild(img);
+            wrapper.appendChild(border);
+            wrapper.appendChild(btnDel);
+            wrapper.appendChild(btnHandle);
+            zone.appendChild(wrapper);
+
+            if(activeSelectedSticker) activeSelectedSticker.classList.remove('selected');
+            activeSelectedSticker = wrapper;
+
+            // --- GESTIONNAIRES TACTILES INTELLIGENTS ET UNIFIÉS ---
+            // 1. Drag Déplacement
+            wrapper.onmousedown = (e) => {
+                if(e.target.classList.contains('sticker-btn')) return;
+                e.stopPropagation();
+                if(activeSelectedSticker) activeSelectedSticker.classList.remove('selected');
+                activeSelectedSticker = wrapper;
+                wrapper.classList.add('selected');
+
+                let startX = e.clientX;
+                let startY = e.clientY;
+                let initX = state.x;
+                let initY = state.y;
+
+                document.onmousemove = (moveEvent) => {
+                    state.x = initX + (moveEvent.clientX - startX);
+                    state.y = initY + (moveEvent.clientY - startY);
+                    wrapper.style.left = `${state.x}px`;
+                    wrapper.style.top = `${state.y}px`;
+                };
+                document.onmouseup = () => { document.onmousemove = null; document.onmouseup = null; };
+            };
+
+            // 2. Traitement combiné (Echelle + Rotation mathématique) via le bouton unique
+            btnHandle.onmousedown = (e) => {
+                e.stopPropagation();
+                let rect = wrapper.getBoundingClientRect();
+                // Centre invariant du composant sticker
+                let centerX = rect.left + rect.width / 2;
+                let centerY = rect.top + rect.height / 2;
+
+                let initDiagonal = Math.hypot(e.clientX - centerX, e.clientY - centerY);
+                let initWidth = state.w;
+                let initHeight = state.h;
+                let initAngle = Math.atan2(e.clientY - centerY, e.clientX - centerX) - state.r;
+
+                document.onmousemove = (moveEvent) => {
+                    // Calcul de la rotation
+                    let currentAngle = Math.atan2(moveEvent.clientY - centerY, moveEvent.clientX - centerX);
+                    state.r = currentAngle - initAngle;
+
+                    // Calcul de la mise à l'échelle proportionnelle
+                    let currentDiagonal = Math.hypot(moveEvent.clientX - centerX, moveEvent.clientY - centerY);
+                    let ratio = currentDiagonal / initDiagonal;
+                    state.w = Math.max(25, initWidth * ratio);
+                    state.h = Math.max(25, initHeight * ratio);
+
+                    wrapper.style.width = `${state.w}px`;
+                    wrapper.style.height = `${state.h}px`;
+                    wrapper.style.transform = `rotate(${state.r}rad)`;
+                };
+
+                document.onmouseup = () => { document.onmousemove = null; document.onmouseup = null; };
+            };
+
+            // Support des terminaux tactiles
+            wrapper.addEventListener('touchstart', (e) => {
+                if(e.target.classList.contains('sticker-btn')) return;
+                if(activeSelectedSticker) activeSelectedSticker.classList.remove('selected');
+                activeSelectedSticker = wrapper;
+                wrapper.classList.add('selected');
+                let touch = e.touches[0];
+                let startX = touch.clientX; let startY = touch.clientY;
+                let initX = state.x; let initY = state.y;
+
+                let touchMoveHandler = (mv) => {
+                    let t2 = mv.touches[0];
+                    state.x = initX + (t2.clientX - startX);
+                    state.y = initY + (t2.clientY - startY);
+                    wrapper.style.left = `${state.x}px`;
+                    wrapper.style.top = `${state.y}px`;
+                };
+                wrapper.addEventListener('touchmove', touchMoveHandler);
+                wrapper.addEventListener('touchend', () => {
+                    wrapper.removeEventListener('touchmove', touchMoveHandler);
+                }, {once: true});
+            });
+
+            btnHandle.addEventListener('touchstart', (e) => {
+                e.stopPropagation();
+                let touch = e.touches[0];
+                let rect = wrapper.getBoundingClientRect();
+                let centerX = rect.left + rect.width / 2;
+                let centerY = rect.top + rect.height / 2;
+                let initDiagonal = Math.hypot(touch.clientX - centerX, touch.clientY - centerY);
+                let initWidth = state.w; let initHeight = state.h;
+                let initAngle = Math.atan2(touch.clientY - centerY, touch.clientX - centerX) - state.r;
+
+                let touchMoveCombo = (mv) => {
+                    let t2 = mv.touches[0];
+                    let currentAngle = Math.atan2(t2.clientY - centerY, t2.clientX - centerX);
+                    state.r = currentAngle - initAngle;
+                    let currentDiagonal = Math.hypot(t2.clientX - centerX, t2.clientY - centerY);
+                    let ratio = currentDiagonal / initDiagonal;
+                    state.w = Math.max(25, initWidth * ratio);
+                    state.h = Math.max(25, initHeight * ratio);
+
+                    wrapper.style.width = `${state.w}px`;
+                    wrapper.style.height = `${state.h}px`;
+                    wrapper.style.transform = `rotate(${state.r}rad)`;
+                };
+                btnHandle.addEventListener('touchmove', touchMoveCombo);
+                btnHandle.addEventListener('touchend', () => {
+                    btnHandle.removeEventListener('touchmove', touchMoveCombo);
+                }, {once: true});
+            });
+        }
+
+        // Désélection des boutons de transformation lors d'un clic en dehors
+        document.getElementById('view-microphone').addEventListener('mousedown', (e) => {
+            if(!e.target.closest('.sticker-wrapper') && activeSelectedSticker) {
+                activeSelectedSticker.classList.remove('selected');
+                activeSelectedSticker = null;
+            }
+        });
+
+        // ========================================================
+        // ENGINE 3 : LOGIQUE CONSOLE DE MIXAGE (HOST / AUDIO)
+        // ========================================================
+        let pageIndicesScroller = 0;
+        let activeLightPeerConnection = null;
+
+        function initMixerHostEngine() {
+            setupMixerSwipePagination();
+            setupColorSpectrumBanner();
+            initPeerConnection(true, null);
+        }
+
+        function setupMixerSwipePagination() {
+            const scroller = document.getElementById('mixer-pages-scroller');
+            const dots = document.querySelectorAll('#mixer-dots-panel .breadcrumb-dot');
+            
+            scroller.onscroll = () => {
+                let index = Math.round(scroller.scrollLeft / window.innerWidth);
+                dots.forEach((d, i) => {
+                    if(i === index) d.classList.add('active');
+                    else d.classList.remove('active');
+                });
+                pageIndicesScroller = index;
+            };
+        }
+
+        function buildAudioHardwareTopology(trackId, stream) {
+            if(!audioCtxHost) {
+                audioCtxHost = new (window.AudioContext || window.webkitAudioContext)();
+            }
+            
+            let source = audioCtxHost.createMediaStreamSource(stream);
+            
+            // Égalisation 3 bandes (BiquadFilters)
+            let eqLow = audioCtxHost.createBiquadFilter(); eqLow.type = "lowshelf"; eqLow.frequency.value = 200;
+            let eqMid = audioCtxHost.createBiquadFilter(); eqMid.type = "peaking"; eqMid.frequency.value = 2000;
+            let eqHigh = audioCtxHost.createBiquadFilter(); eqHigh.type = "highshelf"; eqHigh.frequency.value = 8000;
+            
+            // Noeuds de Gain & Analyseurs volumétriques
+            let volumeNode = audioCtxHost.createGain();
+            let monitorRoutingNode = audioCtxHost.createGain(); // Nœud d'isolation pour monitoring natif
+            let analyserNode = audioCtxHost.createAnalyser();
+            analyserNode.fftSize = 32;
+
+            // Connexions de la topologie
+            source.connect(eqLow);
+            eqLow.connect(eqMid);
+            eqMid.connect(eqHigh);
+            eqHigh.connect(volumeNode);
+            
+            volumeNode.connect(analyserNode);
+            volumeNode.connect(monitorRoutingNode);
+            
+            // LE ROUTAGE NATIF (Actif par défaut)
+            monitorRoutingNode.connect(audioCtxHost.destination);
+            monitorRoutingNode.gain.value = 1.0; 
+
+            incomingAudioNodes[trackId] = {
+                stream: stream,
+                eq: { low: eqLow, mid: eqMid, high: eqHigh },
+                volume: volumeNode,
+                monitor: monitorRoutingNode,
+                analyser: analyserNode
+            };
+
+            // Injecte visuellement les tranches matérielles dans l'IHM multipage
+            appendHardwareStripToDOM(trackId);
+            runVUMeterEngine(trackId);
+        }
+
+        function appendHardwareStripToDOM(id) {
+            const p1 = document.getElementById('simple-tracks-container');
+            const p2 = document.getElementById('advanced-tracks-container');
+            const label = connectedPeers[id]?.name || `MICRO #${id.substring(0,3)}`;
+
+            // 1. Tranche simplifiée (Page 1)
+            const strip1 = document.createElement('div');
+            strip1.className = 'mixer-strip';
+            strip1.id = `strip-simple-${id}`;
+            strip1.innerHTML = `
+                <div class="strip-name">${label}</div>
+                <div class="vu-meter-slot"><div class="vu-bar" id="vu-bar-simple-${id}"></div></div>
+                <div class="fader-rack" style="height:140px;">
+                    <div class="fader-track-line"></div>
+                    <input type="range" min="0" max="100" value="75" class="fader-handle-input" oninput="bindFaderVolume('${id}', this.value)">
+                    <div class="fader-knob-physical" id="fader-knob-simple-${id}" style="top:25%;"></div>
+                </div>
+                <button class="btn-square-hardware" id="btn-mute-${id}" onclick="toggleTrackMute('${id}')">MUTE</button>
+            `;
+            p1.appendChild(strip1);
+
+            // 2. Tranche avancée avec Potentiomètres et Monitoring Natif débrayable (Page 2)
+            const strip2 = document.createElement('div');
+            strip2.className = 'mixer-strip';
+            strip2.id = `strip-adv-${id}`;
+            strip2.style.width = "180px";
+            strip2.innerHTML = `
+                <div class="strip-name">${label} (ADV)</div>
+                <div class="knobs-row">
+                    <div class="knob-container">
+                        <div class="rotary-knob" onmousedown="handleKnob(event, 'low', '${id}')"><div class="knob-pointer"></div></div>
+                        <span>LOW</span>
+                    </div>
+                    <div class="knob-container">
+                        <div class="rotary-knob" onmousedown="handleKnob(event, 'mid', '${id}')"><div class="knob-pointer"></div></div>
+                        <span>MID</span>
+                    </div>
+                    <div class="knob-container">
+                        <div class="rotary-knob" onmousedown="handleKnob(event, 'high', '${id}')"><div class="knob-pointer"></div></div>
+                        <span>HIGH</span>
+                    </div>
+                </div>
+                <div class="fader-rack" style="height:120px; width:30px;">
+                    <div class="fader-track-line"></div>
+                    <input type="range" min="0" max="100" value="75" class="fader-handle-input" oninput="bindFaderVolume('${id}', this.value)">
+                    <div class="fader-knob-physical" id="fader-knob-adv-${id}" style="top:25%;"></div>
+                </div>
+                <button class="btn-square-hardware monitor-active" id="btn-monitor-${id}" onclick="toggleNativeMonitoring('${id}')" style="width:75px; font-size:9px; border-color:var(--neon-green);">MONITOR ON</button>
+            `;
+            p2.appendChild(strip2);
+        }
+
+        function bindFaderVolume(id, val) {
+            const pct = 100 - val;
+            const targetGain = val / 100;
+            
+            if(incomingAudioNodes[id]) {
+                incomingAudioNodes[id].volume.gain.value = targetGain;
+            }
+            
+            // Synchronisation physique des potentiomètres IHM
+            const kSimple = document.getElementById(`fader-knob-simple-${id}`);
+            const kAdv = document.getElementById(`fader-knob-adv-${id}`);
+            if(kSimple) kSimple.style.top = `${pct}%`;
+            if(kAdv) kAdv.style.top = `${pct}%`;
+        }
+
+        function toggleTrackMute(id) {
+            const btn = document.getElementById(`btn-mute-${id}`);
+            if(!incomingAudioNodes[id]) return;
+            
+            const isCurrentlyMuted = btn.classList.contains('active');
+            if(!isCurrentlyMuted) {
+                btn.classList.add('active');
+                incomingAudioNodes[id].volume.gain.value = 0;
+            } else {
+                btn.classList.remove('active');
+                incomingAudioNodes[id].volume.gain.value = 0.75;
+            }
+        }
+
+        function toggleNativeMonitoring(id) {
+            const btn = document.getElementById(`btn-monitor-${id}`);
+            if(!incomingAudioNodes[id]) return;
+            
+            const isMonitoringNodeActive = btn.classList.contains('monitor-active');
+            if(isMonitoringNodeActive) {
+                btn.classList.remove('monitor-active');
+                btn.style.borderColor = "#111";
+                btn.innerText = "MONITOR OFF";
+                incomingAudioNodes[id].monitor.gain.value = 0.0; // Coupe l'écoute locale en pièce
+            } else {
+                btn.classList.add('monitor-active');
+                btn.style.borderColor = var(--neon-green);
+                btn.innerText = "MONITOR ON";
+                incomingAudioNodes[id].monitor.gain.value = 1.0; // Rétablit le flux
+            }
+        }
+
+        function runVUMeterEngine(id) {
+            const node = incomingAudioNodes[id];
+            if(!node) return;
+            const bufferLength = node.analyser.frequencyBinCount;
+            const dataArray = new Uint8Array(bufferLength);
+            const bar = document.getElementById(`vu-bar-simple-${id}`);
+
+            function draw() {
+                if(!incomingAudioNodes[id]) return;
+                node.analyser.getByteFrequencyData(dataArray);
+                let total = 0;
+                for(let i=0; i<bufferLength; i++) total += dataArray[i];
+                let volumePercent = (total / bufferLength) / 140 * 100;
+                
+                if(bar) bar.style.height = `${Math.min(100, volumePercent)}%`;
+                
+                // Si une liaison lumière P2P est configurée, envoi en flux de l'amplitude globale RMS
+                if(activeLightPeerConnection) {
+                    activeLightPeerConnection.send({type: 'AMPLITUDE_DATA', value: volumePercent / 100});
+                }
+                
+                requestAnimationFrame(draw);
+            }
+            draw();
+        }
+
+        function handleKnob(e, frequencyBand, peerId = null) {
+            e.preventDefault();
+            let startY = e.clientY;
+            let currentRotation = 0;
+            const targetPointer = e.target.querySelector('.knob-pointer') || e.target;
+
+            document.onmousemove = (moveEvent) => {
+                let deltaY = startY - moveEvent.clientY; // Déplacement vertical du pointeur
+                currentRotation = Math.min(135, Math.max(-135, currentRotation + deltaY));
+                startY = moveEvent.clientY;
+                
+                if(targetPointer) targetPointer.style.transform = `translateX(-50%) rotate(${currentRotation}deg)`;
+                
+                // Si lié à une égalisation physique de la console
+                if(peerId && incomingAudioNodes[peerId]) {
+                    let gainVal = (currentRotation / 135) * 12; // Mappe entre -12dB et +12dB
+                    if(frequencyBand === 'low') incomingAudioNodes[peerId].eq.low.gain.value = gainVal;
+                    if(frequencyBand === 'mid') incomingAudioNodes[peerId].eq.mid.gain.value = gainVal;
+                    if(frequencyBand === 'high') incomingAudioNodes[peerId].eq.high.gain.value = gainVal;
+                }
+            };
+            document.onmouseup = () => { document.onmousemove = null; document.onmouseup = null; };
+        }
+
+        function setupColorSpectrumBanner() {
+            const spectrum = document.getElementById('spectrum-slider');
+            const cursor = document.getElementById('spectrum-cursor');
+            
+            spectrum.onclick = (e) => {
+                let rect = spectrum.getBoundingClientRect();
+                let clickPositionPercent = (e.clientX - rect.left) / rect.width * 100;
+                cursor.style.left = `${clickPositionPercent}%`;
+                
+                // Conversion empirique de la position en spectre hexadécimal de couleur pour injection réseau
+                let hue = Math.round((clickPositionPercent / 100) * 360);
+                if(activeLightPeerConnection) {
+                    activeLightPeerConnection.send({type: 'COLOR_SHIFT', value: `hsl(${hue}, 100%, 50%)`});
+                }
+            };
+        }
+
+        function zoomFX(module) {
+            module.classList.toggle('zoomed');
+        }
+        function toggleFX(e, btn) {
+            e.stopPropagation();
+            btn.classList.toggle('active');
+        }
+
+        // ========================================================
+        // ENGINE 4 : SOURCE DE LUMIÈRE SCÉNIQUE & PANNEAU 3D FLIP
+        // ========================================================
+        let lightGlobalMode = "brat";
+        let localIntensityLimit = 1.0;
+
+        function initLightSourceEngine() {
+            setupLight3DFlipTriggers();
+            
+            // Connexion automatique s'il y a un hash dans l'URL d'appel
+            const targetHost = window.location.hash.replace('#', '');
+            initPeerConnection(false, targetHost);
+        }
+
+        function setupLight3DFlipTriggers() {
+            const card = document.getElementById('light-3d-card');
+            const front = document.getElementById('light-canvas-front');
+            const btnCloseBack = document.getElementById('btn-close-backpanel');
+
+            // Double clic avant pour retourner le boîtier métallique
+            front.ondblclick = () => { card.classList.add('flipped'); };
+            btnCloseBack.onclick = () => { card.classList.remove('flipped'); };
+
+            // Slider local de gestion d'intensité matérielle
+            const slider = document.getElementById('local-bright-slider');
+            const cursor = document.getElementById('local-bright-cursor');
+            slider.onclick = (e) => {
+                let rect = slider.getBoundingClientRect();
+                let p = (e.clientX - rect.left) / rect.width;
+                p = Math.min(1, Math.max(0, p));
+                cursor.style.left = `${p * 100}%`;
+                localIntensityLimit = p;
+                front.style.opacity = localIntensityLimit;
+            };
+        }
+
+        function processIncomingLightSignals(data) {
+            const front = document.getElementById('light-canvas-front');
+            const infoText = document.getElementById('light-text-info');
+            if(infoText) infoText.style.display = 'none';
+
+            if(data.type === 'COLOR_SHIFT') {
+                if(lightGlobalMode === 'ambient') {
+                    front.style.background = data.value;
+                }
+            }
+            if(data.type === 'AMPLITUDE_DATA') {
+                let amp = data.value;
+                
+                if(lightGlobalMode === 'brat') {
+                    // Mode Brat : Mutation de couleur chaotique aléatoire sur impulsions
+                    if(amp > 0.45) {
+                        let colors = ['#8ACE00', '#000000', '#ffffff'];
+                        let pick = colors[Math.floor(Math.random() * colors.length)];
+                        front.style.background = pick;
+                    }
+                } else if(lightGlobalMode === 'strobe') {
+                    // Mode Stroboscope standard réactif au volume
+                    front.style.background = `rgba(255,255,255, ${amp * localIntensityLimit})`;
+                }
+            }
+        }
+
+        function sendLightCommand(type, val) {
+            if(type === 'mode' && activeLightPeerConnection) {
+                lightGlobalMode = val;
+                activeLightPeerConnection.send({type: 'SET_LIGHT_MODE', value: val});
+            }
+        }
+
+        // ========================================================
+        // ENGINE 5 : PROTOCOLE RÉSEAU P2P SANS SERVEUR (WEBRTC)
+        // ========================================================
+        function initPeerConnection(isHost = false, targetRoomId = null) {
+            // Instanciation de l'architecture PeerJS via serveurs de courtage cloud publics
+            peerInstance = new Peer(null, { debug: 1 });
+
+            peerInstance.on('open', (id) => {
+                p2pRoomId = id;
+                if(isHost) {
+                    document.getElementById('connection-room-badge').innerText = `ROOM ID: ${id}`;
+                    // Génération instantanée du QR Code d'appairage local
+                    const gatewayUrl = `${window.location.origin}${window.location.pathname}#${id}`;
+                    new QRCode(document.getElementById("gateway-qrcode"), {
+                        text: gatewayUrl,
+                        width: 100, height: 100
+                    });
+                } else if(targetRoomId) {
+                    // Le client initie la poignée de main WebRTC immédiatement
+                    executeP2PHandshakeLink(targetRoomId);
+                }
+            });
+
+            if(isHost) {
+                // Écoute de l'Hôte pour flux Audio ET DataChannels entonnoir
+                peerInstance.on('connection', (conn) => {
+                    handleIncomingDataChannel(conn);
+                });
+                peerInstance.on('call', (call) => {
+                    call.answer(null); // L'hôte reçoit le flux sans renvoyer sa propre caméra
+                    call.on('stream', (remoteStream) => {
+                        buildAudioHardwareTopology(call.peer, remoteStream);
+                    });
+                });
+            }
+        }
+
+        function executeP2PHandshakeLink(hostId) {
+            const statusNode = document.getElementById('mic-network-status');
+            const lightInfo = document.getElementById('light-text-info');
+            
+            // 1. Ouvre le canal d'ordonnancement de données (DataChannel)
+            let dataConn = peerInstance.connect(hostId);
+            connectedPeers[hostId] = { dataChannel: dataConn };
+
+            dataConn.on('open', () => {
+                if(statusNode) {
+                    statusNode.innerText = "Connecté à la Régie";
+                    statusNode.className = "mic-status-node connected";
+                }
+                if(lightInfo) lightInfo.innerText = "LIAISON LUMIÈRE COMMENCÉE";
+                
+                // Envoi du type d'entité connecté pour routage intelligent côté régie
+                dataConn.send({type: 'REGISTER_DEVICE', mode: currentMode, name: micCustomName});
+            });
+
+            // Si client en mode Source de Lumière, il écoute les directives de la console
+            if(currentMode === 'light-source') {
+                dataConn.on('data', (data) => {
+                    if(data.type === 'SET_LIGHT_MODE') lightGlobalMode = data.value;
+                    processIncomingLightSignals(data);
+                });
+            }
+
+            // 2. Si client en mode Micro, capture du flux matériel et transmission WebRTC
+            if(currentMode === 'microphone') {
+                navigator.mediaDevices.getUserMedia({ audio: { echoCancellation: false, noiseSuppression: false } })
+                    .then((stream) => {
+                        myLocalStream = stream;
+                        peerInstance.call(hostId, stream);
+                    })
+                    .catch(err => alert("Veuillez autoriser l'accès au microphone pour émettre le flux."));
+            }
+        }
+
+        function handleIncomingDataChannel(conn) {
+            conn.on('data', (data) => {
+                if(data.type === 'REGISTER_DEVICE') {
+                    connectedPeers[conn.peer] = { dataChannel: conn, mode: data.mode, name: data.name };
+                    
+                    if(data.mode === 'light-source') {
+                        activeLightPeerConnection = conn;
+                        // Débloque dynamiquement la Page 5 de régie de lumière sur le mixeur
+                        document.getElementById('mx-page-light').style.display = 'block';
+                        document.getElementById('dot-light-page').style.display = 'block';
+                        document.getElementById('lbl-light-status').innerText = "MATRIX SYNCHRONISÉE";
+                    }
+                }
+                if(data.type === 'RENAME') {
+                    if(connectedPeers[conn.peer]) connectedPeers[conn.peer].name = data.value;
+                    const sName = document.querySelector(`#strip-simple-${conn.peer} .strip-name`);
+                    if(sName) sName.innerText = data.value;
+                }
+                if(data.type === 'MUTE_STATUS') {
+                    const btn = document.getElementById(`btn-mute-${conn.peer}`);
+                    if(btn) {
+                        if(data.value) btn.classList.add('active');
+                        else btn.classList.remove('active');
+                    }
+                }
+            });
+        }
+
+        function sendDataToHost(packet) {
+            for(let pId in connectedPeers) {
+                if(connectedPeers[pId].dataChannel) {
+                    connectedPeers[pId].dataChannel.send(packet);
+                }
+            }
+        }
     </script>
 </body>
 </html>
