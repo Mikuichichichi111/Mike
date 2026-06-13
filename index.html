@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Lavender Core Audio - Fixed Studio</title>
+    <title>Lavender Core Audio - Effects Rack Studio</title>
     
     <script src="https://unpkg.com/peerjs@1.5.2/dist/peerjs.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
@@ -43,7 +43,6 @@
         .mic-status-badge { font-size: 11px; font-weight: 700; background: rgba(0,0,0,0.4); padding: 6px 14px; border-radius: 20px; border-left: 3px solid var(--neon-red); }
         .mic-status-badge.connected { border-left-color: var(--neon-green); }
         .mic-body-rack { position: relative; width: 100%; max-width: 260px; display: flex; flex-direction: column; align-items: center; margin: auto 0; }
-        .mic-grille-svg { width: 120px; height: 120px; }
         .mic-led-ring { width: 90px; height: 8px; background: #000; border-radius: 4px; margin-top: -4px; z-index: 10; }
         .mic-manche { position: relative; width: 86px; height: 200px; background: linear-gradient(to right, #222, #444 50%, #222); border-radius: 0 0 16px 16px; margin-top: -2px; }
         .switch-container { position: absolute; top: 30px; left: 50%; transform: translateX(-50%); }
@@ -63,19 +62,24 @@
         .pairing-dashboard { background: var(--bg-panel); padding: 12px; border-radius: 12px; border: 1px solid var(--panel-border); display: flex; align-items: center; gap: 15px; margin-bottom: 15px; }
         .qr-canvas-wrapper { width: 80px; height: 80px; background: #fff; padding: 4px; border-radius: 6px; }
         .console-deck { display: flex; flex-wrap: wrap; gap: 15px; }
-        .console-strip { width: 130px; background: var(--metal-grad); border: 1px solid var(--panel-border); border-radius: 12px; padding: 12px 8px; display: flex; flex-direction: column; align-items: center; position: relative; }
-        .strip-header-label { font-size: 11px; font-weight: 700; color: var(--lavender-accent); margin-bottom: 10px; }
-        .vu-container { width: 8px; height: 50px; background: #050507; border-radius: 2px; position: relative; overflow: hidden; margin-bottom: 10px; }
+        
+        /* CHANNELS STRIPS */
+        .console-strip { width: 150px; background: var(--metal-grad); border: 1px solid var(--panel-border); border-radius: 12px; padding: 12px 8px; display: flex; flex-direction: column; align-items: center; position: relative; }
+        .strip-header-label { font-size: 11px; font-weight: 700; color: var(--lavender-accent); margin-bottom: 10px; text-transform: uppercase; }
+        .vu-container { width: 8px; height: 40px; background: #050507; border-radius: 2px; position: relative; overflow: hidden; margin-bottom: 10px; }
         .vu-indicator-bar { position: absolute; bottom: 0; width: 100%; height: 0%; background: linear-gradient(to top, #39ff14 0%, #ffff00 75%, #ff3b30 100%); }
-        .fader-well { width: 20px; height: 100px; position: relative; background: rgba(0,0,0,0.3); border-radius: 10px; margin-bottom: 10px; }
-        .fader-range-input { position: absolute; width: 100%; height: 100%; opacity: 0; cursor: pointer; -webkit-appearance: slider-vertical; writing-mode: bt-lr; }
+        .fader-well { width: 20px; height: 90px; position: relative; background: rgba(0,0,0,0.3); border-radius: 10px; margin-bottom: 12px; }
+        .fader-range-input { position: absolute; width: 100%; height: 100%; opacity: 0; cursor: pointer; -webkit-appearance: slider-vertical; }
         .fader-cap-hardware { position: absolute; width: 26px; height: 14px; background: #444; border: 1px solid #000; left: 50%; transform: translate(-50%, -7px); pointer-events: none; }
-        .btn-strip-action { width: 100%; padding: 6px 0; font-size: 10px; font-weight: bold; background: #1a1a24; border: 1px solid #2d2d3d; color: #888; border-radius: 4px; cursor: pointer; margin-top: 5px; }
-        .btn-strip-action.active-mute { background: var(--neon-red); color: white; }
-        .btn-plus { color: var(--neon-cyan); border-style: dashed; }
-        .effects-rack-dropdown { position: absolute; top: 100%; left: 0; width: 100%; background: #161622; border: 1px solid #333; border-radius: 8px; z-index: 50; padding: 6px; display: none; flex-direction: column; gap: 4px; }
-        .effects-rack-dropdown.visible { display: flex; }
-        .fx-toggle-row { display: flex; align-items: center; justify-content: space-between; font-size: 9px; color: #b0b0c2; padding: 4px 2px; cursor: pointer; }
+        
+        /* FX HARDWARE PANEL */
+        .strip-fx-rack { width: 100%; display: flex; flex-direction: column; gap: 5px; margin-bottom: 10px; padding: 6px; background: rgba(0,0,0,0.2); border-radius: 6px; border: 1px solid #222; }
+        .fx-switch-btn { width: 100%; padding: 6px 0; font-size: 9px; font-weight: 800; background: #1a1a24; border: 1px solid #2d2d3d; color: #666; border-radius: 4px; cursor: pointer; text-transform: uppercase; transition: all 0.1s ease; }
+        .fx-switch-btn.fx-on { border-color: var(--neon-cyan); color: var(--neon-cyan); background: rgba(0, 243, 255, 0.05); }
+        .fx-switch-btn.fx-reverb-on { border-color: var(--lavender-accent); color: var(--lavender-accent); background: rgba(177, 159, 251, 0.05); }
+
+        .btn-strip-action { width: 100%; padding: 8px 0; font-size: 11px; font-weight: bold; background: #222; border: 1px solid #333; color: #fff; border-radius: 4px; cursor: pointer; }
+        .btn-strip-action.active-mute { background: var(--neon-red); border-color: var(--neon-red); color: white; }
 
         .mixer-footer-utility { height: 50px; background: var(--bg-panel); border-top: 1px solid var(--panel-border); padding: 0 20px; display: flex; align-items: center; justify-content: space-between; }
         .spectrum-bar { flex: 1; height: 14px; border-radius: 4px; background: linear-gradient(to right, #ff0000, #ffff00, #00ff00, #00ffff, #0000ff, #ff00ff, #ff0000); margin: 0 15px; position: relative; cursor: pointer; }
@@ -162,7 +166,6 @@
         let globalDataChannels = {};
         let activeAudioNodes = {};
         let localMicrophoneStream = null;
-        let localMuteState = false;
         let screenWakeLockInstance = null;
         let karaokeProfileActive = false;
         let currentTargetTeinteHex = '#00ffff';
@@ -199,7 +202,6 @@
             }
         }
 
-        // UNIFICATION RESEAU DU TRAFIC ET CORRECTION DES ECOUTES CLIENTS
         function setupNetworkP2PLink(isHost, roomTarget) {
             hardwarePeerInstance = new Peer(null, { debug: 1 });
 
@@ -240,23 +242,17 @@
                     document.getElementById('light-emissive-surface').style.background = '#2e7d32';
                     setTimeout(() => document.getElementById('light-emissive-surface').style.background = '#000', 500);
                 }
-                channel.send({type: 'CONNECT_READY'});
             });
 
-            // FIX CRITIQUE : Écouteur universel de paquets pour l'esclave lumière
             channel.on('data', (packet) => {
-                if(packet.type === 'COLOR_SYNC') {
-                    document.getElementById('light-emissive-surface').style.background = packet.color;
-                    document.getElementById('light-emissive-surface').style.opacity = 1;
-                }
                 if(packet.type === 'AUDIO_PULSE') {
                     const surf = document.getElementById('light-emissive-surface');
                     surf.style.background = packet.color;
                     surf.style.opacity = packet.intensity;
                 }
-                if(packet.type === 'SIGNAL_MUTE') {
-                    const btn = document.getElementById(`btn-mute-${channel.peer}`);
-                    if(btn) packet.value ? btn.classList.add('active-mute') : btn.classList.remove('active-mute');
+                if(packet.type === 'COLOR_SYNC') {
+                    document.getElementById('light-emissive-surface').style.background = packet.color;
+                    document.getElementById('light-emissive-surface').style.opacity = 1;
                 }
             });
         }
@@ -267,35 +263,64 @@
             });
         }
 
-        // GESTION AUDIO PRO ET AUTOPLAY BYPASS
+        // LOGIQUE DES COMPOSANTS ET DE MAILLAGE DES EFFETS AUDIO
         function injectAudioProcessingTopology(peerId, stream) {
             if(audioContextRégieInstance.state === 'suspended') audioContextRégieInstance.resume();
             
             let ctx = audioContextRégieInstance;
             let src = ctx.createMediaStreamSource(stream);
             
+            // 1. Compresseur de sécurité (Actif par défaut)
             let comp = ctx.createDynamicsCompressor();
-            comp.threshold.value = -24; comp.ratio.value = 4;
+            comp.threshold.value = -22; 
+            comp.ratio.value = 5;
 
-            let echo = ctx.createDelay(); echo.delayTime.value = 0.3;
-            let echoGain = ctx.createGain(); echoGain.gain.value = 0.3;
-            echo.connect(echoGain); echoGain.connect(echo);
+            // 2. Écho / Délai Synchrone
+            let echo = ctx.createDelay(); 
+            echo.delayTime.value = 0.25;
+            let echoGain = ctx.createGain(); 
+            echoGain.gain.value = 0.0; // MUTÉ PAR DÉFAUT (Son Brut)
+            echo.connect(echoGain); 
+            echoGain.connect(echo); // Feedback Loop
 
-            let rev = ctx.createDelay(); rev.delayTime.value = 0.05;
-            let revGain = ctx.createGain(); revGain.gain.value = 0.4;
-            rev.connect(revGain); revGain.connect(rev);
+            // 3. Réverbération Spatiale Ambient
+            let rev = ctx.createDelay(); 
+            rev.delayTime.value = 0.04;
+            let revGain = ctx.createGain(); 
+            revGain.gain.value = 0.0; // MUTÉ PAR DÉFAUT (Son Brut)
+            rev.connect(revGain); 
+            revGain.connect(rev);
 
-            let vol = ctx.createGain(); vol.gain.value = 0.8;
-            let ana = ctx.createAnalyser(); ana.fftSize = 32;
+            // 4. Volume de tranche & Analyseur
+            let vol = ctx.createGain(); 
+            vol.gain.value = 0.8;
+            let ana = ctx.createAnalyser(); 
+            ana.fftSize = 32;
 
-            src.connect(comp); comp.connect(echo); comp.connect(rev);
-            comp.connect(vol); echoGain.connect(vol); revGain.connect(vol);
-            vol.connect(ana); ana.connect(ctx.destination);
+            // Maillage du circuit matériel
+            src.connect(comp); 
+            
+            // Séparation vers les effets
+            comp.connect(echo);
+            comp.connect(rev);
+            
+            // Retour vers le fader de sortie
+            comp.connect(vol);       // Signal Direct (Dry)
+            echoGain.connect(vol);   // Signal Écho (Wet)
+            revGain.connect(vol);    // Signal Reverb (Wet)
+            
+            vol.connect(ana); 
+            ana.connect(ctx.destination);
 
-            activeAudioNodes[peerId] = { vol, ana, comp, echo, rev, fx: false };
+            // Enregistrement des Nodes de contrôle de la puce audio
+            activeAudioNodes[peerId] = { 
+                vol, ana, comp, echoGain, revGain, 
+                echoActive: false, revActive: false, isMuted: false, lastSavedVol: 0.8 
+            };
+            
             generateConsoleStripUI(peerId);
             
-            // Boucle d'analyse audio-réactive
+            // Visualisation et émission de signaux lumineux
             const dataArr = new Uint8Array(ana.frequencyBinCount);
             function runVU() {
                 if(!activeAudioNodes[peerId]) return;
@@ -304,47 +329,99 @@
                 let rms = sum / dataArr.length;
                 
                 const bar = document.getElementById(`vu-${peerId}`);
-                if(bar) bar.style.height = `${Math.min(100, (rms / 120) * 100)}%`;
+                if(bar) bar.style.height = `${Math.min(100, (rms / 110) * 100)}%`;
                 
-                if(rms > 10) {
-                    transmitData({ type: 'AUDIO_PULSE', intensity: Math.max(0.2, rms / 130), color: currentTargetTeinteHex });
+                if(rms > 8) {
+                    transmitData({ type: 'AUDIO_PULSE', intensity: Math.max(0.15, rms / 120), color: currentTargetTeinteHex });
                 }
                 requestAnimationFrame(runVU);
             }
             runVU();
         }
 
+        // GENERATION DYNAMIQUE DE LA TRANCHE DE CONSOLE PRO
         function generateConsoleStripUI(id) {
             const container = document.getElementById('mixer-strips-deck');
             if(document.getElementById(`strip-${id}`)) return;
+            
             const strip = document.createElement('div');
             strip.className = 'console-strip';
             strip.id = `strip-${id}`;
             strip.innerHTML = `
                 <div class="strip-header-label">MIC #${id.substring(0,4)}</div>
                 <div class="vu-container"><div class="vu-indicator-bar" id="vu-${id}"></div></div>
+                
                 <div class="fader-well">
-                    <input type="range" min="0" max="100" value="80" class="fader-range-input" oninput="updateGain('${id}', this.value)">
+                    <input type="range" min="0" max="100" value="80" class="fader-range-input" oninput="updateChannelVolume('${id}', this.value)">
                     <div class="fader-cap-hardware" id="cap-${id}" style="top:20%;"></div>
                 </div>
-                <button class="btn-strip-action" id="btn-mute-${id}" onclick="toggleMute('${id}')">MUTE</button>
+
+                <div class="strip-fx-rack">
+                    <button class="fx-switch-btn" id="fx-echo-${id}" onclick="toggleHardwareEffect('${id}', 'echo')">Écho</button>
+                    <button class="fx-switch-btn" id="fx-rev-${id}" onclick="toggleHardwareEffect('${id}', 'reverb')">Reverb</button>
+                </div>
+                
+                <button class="btn-strip-action" id="btn-mute-${id}" onclick="toggleChannelMute('${id}')">MUTE</button>
             `;
             container.appendChild(strip);
         }
 
-        function updateGain(id, v) {
-            if(activeAudioNodes[id]) activeAudioNodes[id].vol.gain.value = v / 100;
-            document.getElementById(`cap-${id}`).style.top = `${100 - v}%`;
+        // SECTEUR DE CONTROLE DES EFFETS (LOGIQUE DE ROUTAGE)
+        function toggleHardwareEffect(id, type) {
+            let node = activeAudioNodes[id];
+            if (!node) return;
+
+            if (type === 'echo') {
+                node.echoActive = !node.echoActive;
+                node.echoGain.gain.setValueAtTime(node.echoActive ? 0.35 : 0.0, audioContextRégieInstance.currentTime);
+                document.getElementById(`fx-echo-${id}`).classList.toggle('fx-on', node.echoActive);
+            } 
+            else if (type === 'reverb') {
+                node.revActive = !node.revActive;
+                node.revGain.gain.setValueAtTime(node.revActive ? 0.45 : 0.0, audioContextRégieInstance.currentTime);
+                document.getElementById(`fx-rev-${id}`).classList.toggle('fx-reverb-on', node.revActive);
+            }
         }
 
-        function toggleMute(id) {
-            let n = activeAudioNodes[id]; if(!n) return;
-            n.vol.gain.value = n.vol.gain.value > 0 ? 0 : 0.8;
+        function updateChannelVolume(id, value) {
+            let node = activeAudioNodes[id];
+            if (!node) return;
+            let parsedVol = value / 100;
+            node.lastSavedVol = parsedVol;
+            if(!node.isMuted) node.vol.gain.setValueAtTime(parsedVol, audioContextRégieInstance.currentTime);
+            document.getElementById(`cap-${id}`).style.top = `${100 - value}%`;
         }
 
+        function toggleChannelMute(id) {
+            let node = activeAudioNodes[id];
+            if (!node) return;
+            
+            node.isMuted = !node.isMuted;
+            const targetGain = node.isMuted ? 0 : node.lastSavedVol;
+            node.vol.gain.setValueAtTime(targetGain, audioContextRégieInstance.currentTime);
+            
+            document.getElementById(`btn-mute-${id}`).classList.toggle('active-mute', node.isMuted);
+        }
+
+        // MACRO MODE : FORCER TOUS LES EFFETS EN MEME TEMPS
         function toggleKaraokeGlobalMode() {
             karaokeProfileActive = !karaokeProfileActive;
             document.getElementById('btn-toggle-karaoke').classList.toggle('enabled', karaokeProfileActive);
+            
+            // Appliquer à toutes les tranches connectées d'un coup
+            Object.keys(activeAudioNodes).forEach(id => {
+                let node = activeAudioNodes[id];
+                node.echoActive = karaokeProfileActive;
+                node.revActive = karaokeProfileActive;
+                
+                node.echoGain.gain.setValueAtTime(karaokeProfileActive ? 0.35 : 0.0, audioContextRégieInstance.currentTime);
+                node.revGain.gain.setValueAtTime(karaokeProfileActive ? 0.45 : 0.0, audioContextRégieInstance.currentTime);
+                
+                const echoBtn = document.getElementById(`fx-echo-${id}`);
+                const revBtn = document.getElementById(`fx-rev-${id}`);
+                if(echoBtn) echoBtn.classList.toggle('fx-on', karaokeProfileActive);
+                if(revBtn) revBtn.classList.toggle('fx-reverb-on', karaokeProfileActive);
+            });
         }
 
         function setupMixerFooterControls() {
@@ -361,10 +438,12 @@
             }
             bar.onmousedown = (e) => { change(e.clientX); document.onmousemove = (m) => change(m.clientX); };
             document.onmouseup = () => document.onmousemove = null;
+            
+            bar.addEventListener('touchstart', (e) => { change(e.touches[0].clientX); });
+            bar.addEventListener('touchmove', (e) => { change(e.touches[0].clientX); });
         }
 
         function requestMicrophoneHardwareStream() {
-            if(audioContextRégieInstance) audioContextRégieInstance.resume();
             navigator.mediaDevices.getUserMedia({ audio: true }).then(stream => {
                 localMicrophoneStream = stream;
                 document.getElementById('btn-hardware-mic-arm').classList.add('active');
