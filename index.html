@@ -3,22 +3,22 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Studio Live - Console P2P</title>
+    <title>Lavender Core Audio - Studio Pro</title>
     
-    <!-- Bibliothèques distantes pour le P2P et QR Code -->
+    <!-- Librairies distantes requises pour le réseau P2P et l'appairage -->
     <script src="https://unpkg.com/peerjs@1.5.2/dist/peerjs.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
 
     <style>
         :root {
-            --bg-spotify: #121212;
-            --panel-color: #1e1e24;
-            --panel-border: #2a2a32;
-            --metal-grad: linear-gradient(145deg, #2e2e36, #15151a);
+            --bg-main: #0a0a0f;
+            --bg-panel: #13131a;
+            --panel-border: #22222b;
+            --lavender-accent: #b19ffb;
             --neon-cyan: #00f3ff;
             --neon-green: #39ff14;
-            --brat-green: #8ACE00;
-            --lavender-accent: #b19ffb;
+            --neon-red: #ff3b30;
+            --metal-grad: linear-gradient(145deg, #23232a, #111116);
         }
 
         * {
@@ -30,25 +30,24 @@
         }
 
         body {
-            background-color: var(--bg-spotify);
+            background-color: var(--bg-main);
             color: #ffffff;
-            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
-            overflow: hidden;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
             width: 100vw;
             height: 100vh;
+            overflow: hidden;
         }
 
-        /* Texture de tissu acoustique style Spotify en arrière-plan global */
-        .acoustic-texture {
+        /* Texture acoustique discrète en arrière-plan */
+        .acoustic-grid {
             position: absolute;
             width: 100%;
             height: 100%;
             z-index: 1;
-            opacity: 0.04;
+            opacity: 0.03;
             pointer-events: none;
-            background-image: radial-gradient(#ffffff 1px, transparent 0), radial-gradient(#ffffff 1px, transparent 0);
-            background-size: 4px 4px;
-            background-position: 0 0, 2px 2px;
+            background-image: radial-gradient(#ffffff 1px, transparent 0);
+            background-size: 6px 6px;
         }
 
         .view {
@@ -59,56 +58,51 @@
             height: 100vh;
             z-index: 2;
             display: none;
+            overflow-y: auto;
+            -webkit-overflow-scrolling: touch;
         }
 
         .view.active {
-            display: block;
+            display: flex;
         }
 
-        /* --- BOUTON DE SORTIE GLOBAL "X" --- */
-        .btn-close {
+        .btn-close-session {
             position: fixed;
             top: 20px;
             right: 20px;
-            width: 40px;
-            height: 40px;
+            width: 42px;
+            height: 42px;
             border-radius: 50%;
             background: var(--metal-grad);
-            border: 2px solid #3a3a45;
-            box-shadow: inset 0 1px 3px rgba(255,255,255,0.2), 0 4px 8px rgba(0,0,0,0.5);
-            color: #ff4a4a;
-            font-size: 18px;
+            border: 2px solid #2e2e36;
+            color: var(--neon-red);
+            font-size: 16px;
             font-weight: bold;
             display: flex;
             align-items: center;
             justify-content: center;
             cursor: pointer;
             z-index: 9999;
-            transition: transform 0.1s;
-        }
-        .btn-close:active {
-            transform: scale(0.9);
-            box-shadow: inset 0 2px 4px rgba(0,0,0,0.6);
+            box-shadow: 0 4px 10px rgba(0,0,0,0.6);
         }
 
         /* ========================================== */
-        /* 1. MENU D'ACCUEIL                          */
+        /* 1. VUE MENU                                */
         /* ========================================== */
         #view-menu {
-            display: flex;
             flex-direction: column;
             justify-content: center;
             align-items: center;
-            background: radial-gradient(circle at center, #1c1c24 0%, #0a0a0f 100%);
+            background: radial-gradient(circle at center, #161622 0%, #050508 100%);
             padding: 20px;
         }
 
         .menu-title {
-            font-size: 28px;
+            font-size: 26px;
             font-weight: 800;
             margin-bottom: 40px;
+            letter-spacing: 3px;
             text-transform: uppercase;
-            letter-spacing: 2px;
             text-align: center;
             background: linear-gradient(45deg, #ffffff, var(--lavender-accent));
             -webkit-background-clip: text;
@@ -117,1657 +111,968 @@
 
         .menu-grid {
             display: flex;
-            gap: 25px;
+            flex-wrap: wrap;
+            gap: 20px;
             width: 100%;
-            max-width: 900px;
-            height: 320px;
+            max-width: 850px;
+            justify-content: center;
         }
 
         .menu-card {
             flex: 1;
+            min-width: 240px;
+            max-width: 260px;
+            height: 280px;
+            background: var(--metal-grad);
+            border: 2px solid var(--panel-border);
             border-radius: 16px;
             cursor: pointer;
-            position: relative;
-            overflow: hidden;
             display: flex;
             flex-direction: column;
             align-items: center;
             justify-content: center;
-            padding: 20px;
-            border: 2px solid rgba(255, 255, 255, 0.05);
-            box-shadow: 0 15px 35px rgba(0,0,0,0.5), inset 0 1px 0 rgba(255,255,255,0.1);
-            transition: transform 0.3s cubic-bezier(0.25, 1, 0.5, 1), box-shadow 0.3s;
-        }
-
-        .menu-card:hover {
-            transform: translateY(-8px);
-        }
-
-        .card-mic { background: linear-gradient(135deg, #1d2b44 0%, #0f172a 100%); --accent: var(--neon-cyan); }
-        .card-mixer { background: linear-gradient(135deg, #2d1f3d 0%, #170f24 100%); --accent: var(--lavender-accent); }
-        .card-light { background: linear-gradient(135deg, #1f331e 0%, #0a1409 100%); --accent: var(--brat-green); }
-
-        .menu-card::before {
-            content: '';
-            position: absolute;
-            top: 0; left: 0; width: 100%; height: 100%;
-            background: radial-gradient(circle at center, var(--accent) 0%, transparent 70%);
-            opacity: 0.15;
-            transition: opacity 0.3s;
-        }
-
-        .menu-card:hover::before { opacity: 0.3; }
-
-        .card-icon {
-            width: 80px;
-            height: 80px;
-            margin-bottom: 20px;
-            fill: none;
-            stroke: currentColor;
-            stroke-width: 1.5;
-            color: #ffffff;
-        }
-        .menu-card:hover .card-icon { color: var(--accent); }
-
-        .card-label {
-            font-size: 20px;
-            font-weight: 700;
-            margin-bottom: 8px;
-            text-transform: uppercase;
-        }
-        .card-desc {
-            font-size: 13px;
-            color: #8a8a9e;
+            padding: 25px;
             text-align: center;
-            line-height: 1.4;
+            transition: transform 0.2s ease;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.5);
         }
+        .menu-card:hover { transform: translateY(-5px); }
+
+        .card-icon { width: 60px; height: 60px; margin-bottom: 20px; fill: none; stroke: #fff; stroke-width: 1.5; }
+        .card-mic:hover .card-icon { stroke: var(--neon-cyan); }
+        .card-mixer:hover .card-icon { stroke: var(--lavender-accent); }
+        .card-light:hover .card-icon { stroke: var(--neon-green); }
+
+        .card-label { font-size: 16px; font-weight: 700; margin-bottom: 10px; text-transform: uppercase; letter-spacing: 1px; }
+        .card-desc { font-size: 12px; color: #7e7e8d; line-height: 1.4; }
 
         /* ========================================== */
-        /* 2. INTERFACE MICROPHONE (SKEUOMORPHISME)   */
+        /* 2. VUE MICROPHONE                          */
         /* ========================================== */
         #view-microphone {
-            background: linear-gradient(to bottom, #141419, #08080a);
-        }
-
-        .mic-container {
-            position: relative;
-            width: 100%;
-            height: 100%;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-        }
-
-        .mic-wrapper {
-            position: relative;
-            width: 320px;
-            height: 600px;
-            display: flex;
+            background: linear-gradient(to bottom, #0f0f14, #050507);
             flex-direction: column;
             align-items: center;
+            justify-content: space-between;
+            padding: 30px 15px;
         }
 
-        /* Tête du Micro (Skeuomorphe Lourde) */
-        .mic-head {
-            position: relative;
-            width: 170px;
-            height: 170px;
-            z-index: 5;
-        }
-
-        /* Bague LED physique avec occlusion interne */
-        .mic-led-ring {
-            position: absolute;
-            bottom: -3px;
-            left: 50%;
-            transform: translateX(-50%);
-            width: 116px;
-            height: 14px;
-            border-radius: 7px;
-            background: #09090b;
-            z-index: 6;
-            box-shadow: inset 0 2px 4px rgba(0,0,0,0.9), 0 1px 1px rgba(255,255,255,0.1);
-            transition: background 0.3s, box-shadow 0.3s;
-        }
-
-        /* Manche métallique principal */
-        .mic-handle-wrapper {
-            position: relative;
-            width: 110px;
-            height: 320px;
-            margin-top: -2px;
-            z-index: 4;
-        }
-
-        .mic-handle-base {
-            position: absolute;
-            width: 100%;
-            height: 100%;
-            border-radius: 0 0 24px 24px;
-            box-shadow: 0 25px 50px rgba(0,0,0,0.85);
-            transition: background 0.5s;
-        }
-
-        /* ZONE ACTIVE POUR LES STICKERS */
-        .mic-sticker-zone {
-            position: absolute;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            border-radius: 0 0 24px 24px;
-            overflow: hidden;
-            z-index: 2;
-            pointer-events: none;
-        }
-
-        /* LE MASQUE DE RELIEF ET D'OMBRE CYLINDRIQUE (RENFORCÉ) */
-        .mic-shadow-overlay {
-            position: absolute;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            border-radius: 0 0 24px 24px;
-            background: linear-gradient(to right, 
-                rgba(0,0,0,0.95) 0%, 
-                rgba(0,0,0,0.4) 12%, 
-                rgba(255,255,255,0.22) 45%, 
-                rgba(255,255,255,0.22) 55%, 
-                rgba(0,0,0,0.5) 88%, 
-                rgba(0,0,0,0.98) 100%);
-            z-index: 3;
-            pointer-events: none;
-            mix-blend-mode: multiply;
-        }
-
-        /* Éléments de contrôle physiques sur le manche */
-        .mic-controls {
-            position: absolute;
-            top: 45px;
-            left: 50%;
-            transform: translateX(-50%);
-            z-index: 10;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-        }
-
-        /* Switch à glissière mécanique réaliste */
-        .switch-plate {
-            width: 36px;
-            height: 90px;
-            background: linear-gradient(145deg, #09090b, #202025);
-            border: 2px solid #000;
-            border-radius: 8px;
-            position: relative;
-            box-shadow: inset 0 4px 8px rgba(0,0,0,0.9), 0 1px 2px rgba(255,255,255,0.15);
-            cursor: pointer;
-        }
-
-        .switch-knob {
-            width: 28px;
-            height: 38px;
-            background: linear-gradient(to bottom, #9494a1 0%, #5c5c66 45%, #2b2b33 50%, #121217 55%, #474752 100%);
-            border-radius: 5px;
-            position: absolute;
-            left: 2px;
-            top: 4px;
-            box-shadow: 0 5px 10px rgba(0,0,0,0.75), inset 0 1px 0 rgba(255,255,255,0.4);
-            border: 1px solid #0a0a0d;
-            transition: top 0.18s cubic-bezier(0.25, 1, 0.5, 1);
-        }
-        /* Stries physiques antidérapantes sur le bouton */
-        .switch-knob::before {
-            content: '';
-            position: absolute;
-            top: 50%; left: 4px; right: 4px; height: 2px;
-            background: rgba(0,0,0,0.6); margin-top: -6px;
-            box-shadow: 0 4px 0 rgba(0,0,0,0.6), 0 8px 0 rgba(0,0,0,0.6), 0 -4px 0 rgba(0,0,0,0.6);
-            border-bottom: 1px solid rgba(255,255,255,0.15);
-        }
-
-        .switch-plate.muted .switch-knob {
-            top: 44px;
-        }
-
-        /* Gravure ciselée du nom du micro */
-        .mic-engraving {
-            position: absolute;
-            bottom: 30px;
-            left: 0;
-            width: 100%;
-            text-align: center;
+        .mic-status-badge {
             font-size: 11px;
             font-weight: 700;
-            letter-spacing: 2px;
-            color: rgba(255, 255, 255, 0.18);
-            text-shadow: 1px 1px 1px rgba(255,255,255,0.04), -1px -1px 1px rgba(0,0,0,0.7);
-            text-transform: uppercase;
-            z-index: 10;
-        }
-        .mic-engraving input {
-            background: transparent;
-            border: none;
-            color: #ffffff;
-            text-align: center;
-            font-size: 11px;
-            font-weight: 700;
-            letter-spacing: 2px;
-            text-transform: uppercase;
-            outline: none;
-            width: 80%;
-        }
-
-        /* Style des Stickers Mobiles */
-        .sticker-wrapper {
-            position: absolute;
-            pointer-events: auto;
-            cursor: move;
-        }
-        .sticker-wrapper.selected .sticker-border {
-            border: 1.5px dashed var(--neon-cyan);
-        }
-        .sticker-img {
-            width: 100%;
-            height: 100%;
-            object-fit: contain;
-            display: block;
-        }
-        .sticker-border {
-            position: absolute;
-            top: -4px; left: -4px; right: -4px; bottom: -4px;
-            pointer-events: none;
-        }
-        .sticker-btn {
-            position: absolute;
-            width: 18px;
-            height: 18px;
-            border-radius: 50%;
-            display: none;
-            align-items: center;
-            justify-content: center;
-            font-size: 10px;
-            font-weight: bold;
-            pointer-events: auto;
-            box-shadow: 0 2px 4px rgba(0,0,0,0.5);
-        }
-        .sticker-wrapper.selected .sticker-btn {
-            display: flex;
-        }
-        .sticker-del {
-            top: -10px; right: -10px;
-            background: #ff3b30; color: white; cursor: pointer;
-        }
-        .sticker-handle {
-            bottom: -10px; right: -10px;
-            background: var(--neon-cyan); color: black; cursor: nwse-resize;
-        }
-
-        /* Presets Visuels Micro */
-        .mic-skin-selector {
-            position: absolute;
-            bottom: 30px;
-            display: flex;
-            gap: 12px;
-            background: rgba(0,0,0,0.5);
-            padding: 8px 16px;
-            border-radius: 30px;
-            border: 1px solid rgba(255,255,255,0.05);
-            backdrop-filter: blur(10px);
-            z-index: 100;
-        }
-        .skin-btn {
+            background: rgba(0,0,0,0.4);
             padding: 6px 14px;
-            font-size: 12px;
-            font-weight: 600;
-            background: var(--metal-grad);
-            border: 1px solid #333;
-            color: #8a8a9e;
             border-radius: 20px;
+            border-left: 3px solid var(--neon-red);
+        }
+        .mic-status-badge.connected { border-left-color: var(--neon-green); }
+
+        .mic-body-rack {
+            position: relative;
+            width: 100%;
+            max-width: 260px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            margin: auto 0;
+        }
+
+        .mic-grille-svg { width: 140px; height: 140px; filter: drop-shadow(0 10px 15px rgba(0,0,0,0.7)); }
+        .mic-led-ring { width: 100px; height: 10px; background: #000; border-radius: 5px; margin-top: -4px; z-index: 10; transition: background 0.3s; }
+        
+        .mic-manche {
+            position: relative;
+            width: 96px;
+            height: 240px;
+            background: linear-gradient(to right, #111, #333 30%, #555 50%, #333 70%, #111);
+            border-radius: 0 0 20px 20px;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.8);
+            margin-top: -2px;
+            overflow: hidden;
+        }
+        .mic-sticker-layer { position: absolute; width: 100%; height: 100%; top:0; left:0; pointer-events: auto; }
+        .mic-shading-layer { position: absolute; width: 100%; height: 100%; top:0; left:0; background: linear-gradient(to right, rgba(0,0,0,0.8) 0%, transparent 20%, transparent 80%, rgba(0,0,0,0.9) 100%); pointer-events: none; mix-blend-mode: multiply; }
+
+        .switch-container { position: absolute; top: 40px; left: 50%; transform: translateX(-50%); z-index: 20; }
+        .hardware-switch { width: 30px; height: 70px; background: #07070a; border: 2px solid #222; border-radius: 6px; position: relative; cursor: pointer; }
+        .switch-handle { width: 22px; height: 28px; background: #555; border-radius: 4px; position: absolute; left: 2px; top: 4px; transition: top 0.1s; box-shadow: 0 4px 6px rgba(0,0,0,0.5); }
+        .hardware-switch.muted .switch-handle { top: 34px; background: #8c2020; }
+
+        .mic-id-engraving { position: absolute; bottom: 20px; width: 100%; text-align: center; font-size: 10px; font-weight: bold; color: rgba(255,255,255,0.2); letter-spacing: 2px; }
+
+        .btn-action-hardware {
+            width: 85%;
+            max-width: 240px;
+            padding: 16px;
+            background: linear-gradient(145deg, #dd2c00, #990000);
+            border: 2px solid #000;
+            border-radius: 30px;
+            color: #fff;
+            font-weight: 800;
+            text-transform: uppercase;
+            letter-spacing: 1px;
             cursor: pointer;
+            box-shadow: 0 6px 15px rgba(0,0,0,0.5);
+            text-align: center;
         }
-        .skin-btn.active {
-            color: white;
-            border-color: var(--lavender-accent);
-            box-shadow: 0 0 10px rgba(177, 159, 251, 0.3);
-        }
-
-        /* Infos de connexion Micro */
-        .mic-status-node {
-            position: absolute;
-            top: 30px;
-            left: 30px;
-            font-size: 12px;
-            background: rgba(0,0,0,0.5);
-            padding: 8px 14px;
-            border-radius: 8px;
-            border-left: 3px solid #ff3b30;
-        }
-        .mic-status-node.connected {
-            border-left-color: var(--neon-green);
+        .btn-action-hardware.active {
+            background: linear-gradient(145deg, #2e7d32, #39ff14);
+            color: #000;
+            border-color: #39ff14;
         }
 
+        /* Sticker Engine styles */
+        .sticker-node { position: absolute; width: 50px; height: 50px; cursor: move; }
+        .sticker-node img { width: 100%; height: 100%; object-fit: contain; }
+        .sticker-node .del-btn { position: absolute; top:-8px; right:-8px; width:16px; height:16px; background:var(--neon-red); color:white; border-radius:50%; font-size:10px; display:flex; align-items:center; justify-content:center; font-weight:bold; }
+
         /* ========================================== */
-        /* 3. TABLE DE MIXAGE                         */
+        /* 3. VUE TABLE DE MIXAGE                     */
         /* ========================================== */
-        .mixer-window {
+        .mixer-container {
             width: 100%;
             height: 100%;
             display: flex;
             flex-direction: column;
-            background: #0d0d11;
+            background: #09090c;
         }
 
-        /* Système de Swipe Horizontal (Scroll Snap) */
-        .mixer-pages-container {
+        .mixer-viewport {
             flex: 1;
             display: flex;
             overflow-x: auto;
             scroll-snap-type: x mandatory;
             scrollbar-width: none;
         }
-        .mixer-pages-container::-webkit-scrollbar { display: none; }
+        .mixer-viewport::-webkit-scrollbar { display: none; }
 
-        .mixer-page {
+        .mixer-slide-page {
             width: 100vw;
             height: 100%;
             flex-shrink: 0;
             scroll-snap-align: start;
-            padding: 25px;
-            overflow-y: auto;
-            position: relative;
-        }
-
-        .page-header {
-            margin-bottom: 25px;
-            border-bottom: 1px solid var(--panel-border);
-            padding-bottom: 12px;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-        }
-        .page-header h2 {
-            font-size: 22px;
-            text-transform: uppercase;
-            letter-spacing: 1px;
-            color: #e2e2ec;
-        }
-
-        /* Tranches de console (Mélangeur) */
-        .tracks-deck {
-            display: flex;
-            gap: 20px;
-            height: calc(100% - 60px);
-            align-items: stretch;
-        }
-
-        .mixer-strip {
-            width: 130px;
-            background: var(--metal-grad);
-            border: 1px solid var(--panel-border);
-            border-radius: 12px;
-            padding: 15px 10px;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            box-shadow: 0 10px 20px rgba(0,0,0,0.4);
-        }
-
-        .strip-name {
-            font-size: 12px;
-            font-weight: 700;
-            color: var(--lavender-accent);
-            margin-bottom: 15px;
-            text-transform: uppercase;
-        }
-
-        /* VU-mètre physique */
-        .vu-meter-slot {
-            width: 14px;
-            height: 80px;
-            background: #0a0a0d;
-            border-radius: 3px;
-            border: 1px solid #222;
-            position: relative;
-            overflow: hidden;
-            margin-bottom: 15px;
-            box-shadow: inset 0 2px 4px rgba(0,0,0,0.8);
-        }
-        .vu-bar {
-            position: absolute;
-            bottom: 0;
-            width: 100%;
-            height: 0%;
-            background: linear-gradient(to top, #00ff00 0%, #ffff00 75%, #ff0000 100%);
-            transition: height 0.05s linear;
-        }
-
-        /* Fader de volume vertical skeuomorphique */
-        .fader-rack {
-            flex: 1;
-            width: 30px;
-            position: relative;
-            background: rgba(0,0,0,0.2);
-            border-radius: 15px;
-            border-left: 2px solid #111;
-            border-right: 2px solid #222;
-            margin: 10px 0;
-            display: flex;
-            justify-content: center;
-        }
-        .fader-track-line {
-            position: absolute;
-            width: 2px;
-            height: 90%;
-            top: 5%;
-            background: #000;
-        }
-        .fader-handle-input {
-            position: absolute;
-            width: 34px;
-            height: 100%;
-            top: 0;
-            opacity: 0;
-            cursor: pointer;
-            writing-mode: bt-lr;
-            -webkit-appearance: slider-vertical;
-        }
-        .fader-knob-physical {
-            position: absolute;
-            width: 36px;
-            height: 22px;
-            background: linear-gradient(to bottom, #666 0%, #333 45%, #111 50%, #444 55%, #222 100%);
-            border: 1px solid #000;
-            border-radius: 3px;
-            box-shadow: 0 4px 6px rgba(0,0,0,0.6), inset 0 1px 0 rgba(255,255,255,0.2);
-            pointer-events: none;
-            left: 50%;
-            transform: translate(-50%, -11px);
-        }
-        .fader-knob-physical::before {
-            content: '';
-            position: absolute;
-            top: 10px; left: 0; right: 0; height: 2px;
-            background: #ff3b30;
-            box-shadow: 0 0 4px #ff3b30;
-        }
-
-        /* Potentiomètres rotatifs (Knobs) */
-        .knobs-row {
-            display: flex;
-            gap: 15px;
-            margin-bottom: 20px;
-        }
-        .knob-container {
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            font-size: 10px;
-            color: #8a8a9e;
-        }
-        .rotary-knob {
-            width: 38px;
-            height: 38px;
-            border-radius: 50%;
-            background: radial-gradient(circle at center, #444 0%, #1a1a20 100%);
-            border: 2px solid #111;
-            box-shadow: 0 4px 6px rgba(0,0,0,0.4), inset 0 1px 0 rgba(255,255,255,0.1);
-            position: relative;
-            margin-bottom: 4px;
-            cursor: ns-resize;
-        }
-        .knob-pointer {
-            position: absolute;
-            top: 4px;
-            left: 50%;
-            width: 2px;
-            height: 10px;
-            background: var(--neon-cyan);
-            transform-origin: bottom center;
-            transform: translateX(-50%) rotate(0deg);
-        }
-
-        /* Bouton carré de Mute / Monitoring */
-        .btn-square-hardware {
-            width: 44px;
-            height: 32px;
-            background: linear-gradient(145deg, #3a3a45, #1e1e24);
-            border: 2px solid #111;
-            border-radius: 4px;
-            color: #8a8a9e;
-            font-size: 10px;
-            font-weight: 700;
-            text-transform: uppercase;
-            cursor: pointer;
-            box-shadow: 0 3px 5px rgba(0,0,0,0.5), inset 0 1px 0 rgba(255,255,255,0.1);
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            margin-top: 10px;
-        }
-        .btn-square-hardware.active {
-            background: linear-gradient(145deg, #1e1e24, #111);
-            color: #ff3b30;
-            box-shadow: inset 0 2px 4px rgba(0,0,0,0.6);
-            border-color: #ff3b30;
-            text-shadow: 0 0 5px rgba(255,59,48,0.4);
-        }
-        .btn-square-hardware.monitor-active {
-            color: var(--neon-green);
-            border-color: var(--neon-green);
-        }
-
-        /* Rack d'Effets (Page 3) */
-        .fx-rack-deck {
-            display: flex;
-            gap: 20px;
-            flex-wrap: wrap;
-        }
-        .fx-module {
-            width: 180px;
-            height: 220px;
-            background: var(--metal-grad);
-            border: 2px solid var(--panel-border);
-            border-radius: 14px;
-            padding: 15px;
-            display: flex;
-            flex-direction: column;
-            justify-content: space-between;
-            box-shadow: 0 12px 25px rgba(0,0,0,0.5);
-            cursor: pointer;
-            transition: all 0.2s;
-        }
-        .fx-module.zoomed {
-            position: fixed;
-            top: 10%; left: 10%; width: 80vw; height: 80vh;
-            z-index: 10000;
-            background: #17171e;
-            padding: 40px;
-        }
-
-        .fx-title {
-            font-size: 14px;
-            font-weight: 800;
-            text-transform: uppercase;
-            letter-spacing: 1px;
-            border-bottom: 1px solid rgba(255,255,255,0.1);
-            padding-bottom: 6px;
-        }
-
-        /* Page Plus Modulaire (Page 4) */
-        .btn-page-plus {
-            width: 100px;
-            height: 100px;
-            border-radius: 20px;
-            border: 3px dashed #3a3a45;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 36px;
-            color: #3a3a45;
-            cursor: pointer;
-            position: absolute;
-            top: 50%; left: 50%;
-            transform: translate(-50%, -50%);
-            transition: all 0.2s;
-        }
-        .btn-page-plus:hover {
-            border-color: var(--lavender-accent);
-            color: var(--lavender-accent);
-        }
-
-        /* Banderole LED Basse de Contrôle Lumineux */
-        .mixer-light-bar-control {
-            height: 70px;
-            background: #13131a;
-            border-top: 2px solid var(--panel-border);
-            padding: 10px 25px;
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-        }
-        .color-spectrum-banner {
-            flex: 1;
-            height: 24px;
-            border-radius: 6px;
-            background: linear-gradient(to right, #ff0000, #ffff00, #00ff00, #00ffff, #0000ff, #ff00ff, #ff0000);
-            margin: 0 20px;
-            position: relative;
-            cursor: pointer;
-            border: 1px solid #000;
-        }
-        .spectrum-indicator {
-            position: absolute;
-            top: -3px;
-            width: 6px;
-            height: 30px;
-            background: #fff;
-            border: 1px solid #000;
-            border-radius: 2px;
-            pointer-events: none;
-        }
-
-        /* Infos Salle d'Attente Mixer */
-        .mixer-gateway-card {
-            background: var(--metal-grad);
             padding: 20px;
+            overflow-y: auto;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .mixer-top-bar {
+            margin-bottom: 15px;
+            border-bottom: 1px solid var(--panel-border);
+            padding-bottom: 10px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 10px;
+        }
+        .mixer-top-bar h2 { font-size: 16px; text-transform: uppercase; letter-spacing: 1px; color: #cdd; }
+
+        .btn-mode-karaoke {
+            padding: 8px 16px;
+            background: var(--metal-grad);
+            border: 1px solid var(--panel-border);
+            color: #fff;
+            border-radius: 6px;
+            font-size: 11px;
+            font-weight: 700;
+            text-transform: uppercase;
+            cursor: pointer;
+            letter-spacing: 1px;
+        }
+        .btn-mode-karaoke.enabled {
+            background: var(--lavender-accent);
+            color: #000;
+            border-color: #fff;
+            box-shadow: 0 0 10px var(--lavender-accent);
+        }
+
+        .pairing-dashboard {
+            background: var(--bg-panel);
+            padding: 12px;
             border-radius: 12px;
             border: 1px solid var(--panel-border);
             display: flex;
-            gap: 25px;
             align-items: center;
-            margin-bottom: 25px;
+            gap: 15px;
+            margin-bottom: 15px;
+            width: 100%;
         }
-        .qr-holder {
-            width: 100px;
-            height: 100px;
-            background: white;
-            padding: 5px;
-            border-radius: 6px;
-        }
+        .qr-canvas-wrapper { width: 80px; height: 80px; background: #fff; padding: 4px; border-radius: 6px; flex-shrink: 0; }
 
-        /* Barres de pagination peristantes au bas du mixeur */
-        .mixer-breadcrumbs {
+        /* Grille adaptative pour les tranches de console */
+        .console-deck {
             display: flex;
-            justify-content: center;
-            gap: 8px;
-            padding: 10px 0;
-            background: #0d0d11;
-        }
-        .breadcrumb-dot {
-            width: 8px;
-            height: 8px;
-            border-radius: 50%;
-            background: #2a2a35;
-            transition: background 0.2s;
-        }
-        .breadcrumb-dot.active {
-            background: var(--lavender-accent);
-            box-shadow: 0 0 6px var(--lavender-accent);
+            flex-wrap: wrap;
+            gap: 15px;
+            width: 100%;
+            align-items: start;
         }
 
-        /* ========================================== */
-        /* 4. SOURCE DE LUMIÈRE (EFFET FLIP 3D)       */
-        /* ========================================== */
-        #view-light-source {
-            perspective: 1400px;
-            background: #000;
-        }
-        .flip-card-3d-spatial {
-            width: 100%;
-            height: 100%;
-            position: relative;
-            transform-style: preserve-3d;
-            transition: transform 0.8s cubic-bezier(0.4, 0, 0.2, 1);
-        }
-        .flip-card-3d-spatial.flipped {
-            transform: rotateY(180deg);
-        }
-        .light-face {
-            position: absolute;
-            width: 100%;
-            height: 100%;
-            backface-visibility: hidden;
-            -webkit-backface-visibility: hidden;
-        }
-        
-        /* Face Lumineuse (Avant) */
-        .light-face-front {
-            background: #000;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-        }
-        .light-video-layer {
-            position: absolute;
-            width: 100%;
-            height: 100%;
-            object-fit: cover;
-            opacity: 0;
-            pointer-events: none;
-            transition: opacity 0.5s;
-        }
-
-        /* Face Réglages Métalliques (Arrière) */
-        .light-face-back {
-            transform: rotateY(180deg);
-            background: radial-gradient(circle at center, #2c2c35 0%, #15151a 100%);
-            padding: 40px;
+        .console-strip {
+            width: 135px;
+            background: var(--metal-grad);
+            border: 1px solid var(--panel-border);
+            border-radius: 14px;
+            padding: 12px 8px;
             display: flex;
             flex-direction: column;
-            justify-content: space-between;
-            border: 10px solid #111;
+            align-items: center;
+            position: relative;
+            box-shadow: 0 8px 20px rgba(0,0,0,0.3);
+        }
+
+        .strip-header-label { font-size: 11px; font-weight: 700; color: var(--lavender-accent); margin-bottom: 10px; text-transform: uppercase; text-align: center; max-width: 100%; overflow: hidden; text-overflow: ellipsis; }
+        
+        .vu-container { width: 10px; height: 60px; background: #050507; border-radius: 2px; position: relative; overflow: hidden; margin-bottom: 10px; }
+        .vu-indicator-bar { position: absolute; bottom: 0; width: 100%; height: 0%; background: linear-gradient(to top, #39ff14 0%, #ffff00 75%, #ff3b30 100%); transition: height 0.05s ease; }
+
+        .fader-well { width: 24px; height: 120px; position: relative; background: rgba(0,0,0,0.3); border-radius: 12px; margin-bottom: 10px; }
+        .fader-slot-line { position: absolute; width: 2px; height: 90%; top: 5%; left: 50%; transform: translateX(-50%); background: #000; }
+        .fader-range-input { position: absolute; width: 100%; height: 100%; opacity: 0; cursor: pointer; writing-mode: bt-lr; -webkit-appearance: slider-vertical; }
+        .fader-cap-hardware { position: absolute; width: 30px; height: 16px; background: linear-gradient(to bottom, #555, #111 50%, #333); border: 1px solid #000; border-radius: 2px; left: 50%; transform: translate(-50%, -8px); pointer-events: none; }
+        .fader-cap-hardware::after { content: ''; position: absolute; top: 7px; left: 0; width: 100%; height: 2px; background: var(--neon-cyan); }
+
+        .btn-strip-action { width: 100%; padding: 6px 0; font-size: 10px; font-weight: bold; background: #1a1a24; border: 1px solid #2d2d3d; color: #888; border-radius: 4px; cursor: pointer; margin-top: 5px; text-transform: uppercase; }
+        .btn-strip-action.active-mute { background: var(--neon-red); color: white; border-color: var(--neon-red); }
+        .btn-strip-action.btn-plus { color: var(--neon-cyan); font-size: 12px; border-style: dashed; }
+
+        /* Menu d'effets modulaire intelligent */
+        .effects-rack-dropdown {
+            position: absolute;
+            top: 100%;
+            left: 0;
+            width: 100%;
+            background: #161622;
+            border: 1px solid #333344;
+            border-radius: 8px;
+            z-index: 50;
+            padding: 8px;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.6);
+            display: none;
+            flex-direction: column;
+            gap: 6px;
+        }
+        .effects-rack-dropdown.visible { display: flex; }
+        .fx-toggle-row { display: flex; align-items: center; justify-content: space-between; font-size: 9px; font-weight: bold; text-transform: uppercase; color: #b0b0c2; padding: 4px 2px; cursor: pointer; border-bottom: 1px solid #222233; }
+        .fx-toggle-row input { cursor: pointer; }
+
+        /* Section basse de contrôle de teinte */
+        .mixer-footer-utility { height: 50px; background: var(--bg-panel); border-top: 1px solid var(--panel-border); padding: 0 20px; display: flex; align-items: center; justify-content: space-between; }
+        .spectrum-bar { flex: 1; height: 16px; border-radius: 4px; background: linear-gradient(to right, #ff0000, #ffff00, #00ff00, #00ffff, #0000ff, #ff00ff, #ff0000); margin: 0 15px; position: relative; cursor: pointer; }
+        .spectrum-slider-handle { position: absolute; top: -3px; width: 6px; height: 22px; background: #fff; border: 1px solid #000; pointer-events: none; }
+
+        .mixer-dots-indicator { display: flex; justify-content: center; gap: 6px; padding: 8px 0; background: #09090c; }
+        .dot { width: 6px; height: 6px; border-radius: 50%; background: #252533; }
+        .dot.active { background: var(--lavender-accent); }
+
+        /* ========================================== */
+        /* 4. VUE SOURCE LUMINEUSE                    */
+        /* ========================================== */
+        #view-light-source { perspective: 1200px; background: #000; }
+        .spatial-3d-card { width: 100%; height: 100%; position: relative; transform-style: preserve-3d; transition: transform 0.5s ease; }
+        .spatial-3d-card.flipped { transform: rotateY(180deg); }
+        .light-panel-side { position: absolute; width: 100%; height: 100%; backface-visibility: hidden; -webkit-backface-visibility: hidden; }
+        .light-side-front { background: #000; display: flex; flex-direction: column; align-items: center; justify-content: center; transition: background 0.1s ease; }
+        .light-side-back { transform: rotateY(180deg); background: #121218; padding: 30px; display: flex; flex-direction: column; justify-content: space-between; }
+
+        .pulsing-sync-animation {
+            width: 40px; height: 40px; border-radius: 50%; border: 2px solid rgba(255,255,255,0.2);
+            animation: pulseSync 2s infinite ease-in-out; margin-bottom: 15px;
+        }
+        @keyframes pulseSync {
+            0% { transform: scale(0.8); opacity: 0.3; }
+            50% { opacity: 1; }
+            100% { transform: scale(1.2); opacity: 0; }
         }
     </style>
 </head>
 <body>
 
-    <div class="acoustic-texture"></div>
-
-    <!-- 0. BOUTON CLOSE UNIQUE -->
-    <button id="global-close-btn" class="btn-close" style="display:none;">X</button>
+    <div class="acoustic-grid"></div>
+    <button id="session-kill-btn" class="btn-close-session" style="display:none;">×</button>
 
     <!-- ========================================== -->
-    <!-- 1. VUE MENU PRINCIPAL                      -->
+    <!-- 1. STRUCTURE DU MENU PRINCIPAL            -->
     <!-- ========================================== -->
     <div id="view-menu" class="view active">
         <h1 class="menu-title">LAVENDER CORE AUDIO</h1>
         <div class="menu-grid">
-            <div class="menu-card card-mic" onclick="switchView('microphone')">
+            <div class="menu-card card-mic" onclick="navigateSession('microphone')">
                 <svg class="card-icon" viewBox="0 0 24 24"><path d="M12 2a3 3 0 0 0-3 3v7a3 3 0 0 0 6 0V5a3 3 0 0 0-3-3Z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2M12 19v3M8 22h8"/></svg>
-                <div class="card-label">Mode Micro</div>
-                <div class="card-desc">Transforme l'appareil en micro sans-fil haute fidélité avec skins physiques et stickers d'enroulement 3D.</div>
+                <div class="card-label">Micro Connecté</div>
+                <div class="card-desc">Diffusion P2P native avec skins dynamiques, double-tap stickers et verrouillage anti-veille automatique.</div>
             </div>
-            <div class="menu-card card-mixer" onclick="switchView('mixer')">
-                <svg class="card-icon" viewBox="0 0 24 24"><path d="M4 10h16M4 14h16M9 2v6M15 2v6M9 16v6M15 16v6"/><circle cx="9" cy="5" r="2"/><circle cx="15" cy="7" r="2"/><circle cx="12" cy="12" r="2"/><circle cx="9" cy="18" r="2"/><circle cx="15" cy="20" r="2"/></svg>
-                <div class="card-label">Table Mixage</div>
-                <div class="card-desc">Console studio multipage plein écran. Monitoring natif, faders physiques, racks d'effets extensibles et routeur lumière.</div>
+            <div class="menu-card card-mixer" onclick="navigateSession('mixer')">
+                <svg class="card-icon" viewBox="0 0 24 24"><path d="M4 10h16M4 14h16M9 2v6M15 2v6M9 16v6M15 16v6"/><circle cx="9" cy="5" r="2"/><circle cx="15" cy="7" r="2"/></svg>
+                <div class="card-label">Console Régie</div>
+                <div class="card-desc">Table de mixage multi-page. Rack modulaire d'effets vocaux avancés et routage lumière synchrone.</div>
             </div>
-            <div class="menu-card card-light" onclick="switchView('light-source')">
-                <svg class="card-icon" viewBox="0 0 24 24"><path d="M12 2v2M12 20v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M2 12h2M20 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42"/><circle cx="12" cy="12" r="5"/></svg>
+            <div class="menu-card card-light" onclick="navigateSession('light-source')">
+                <svg class="card-icon" viewBox="0 0 24 24"><path d="M12 2v2M12 20v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42"/><circle cx="12" cy="12" r="5"/></svg>
                 <div class="card-label">Source Lumineuse</div>
-                <div class="card-desc">Diffuseur d'ambiance stroboscopique à 100% d'éclat. Synchro sonore P2P et mode Brat exclusif avec panneau Flip 3D.</div>
+                <div class="card-desc">Diffuseur d'ambiance esclave audio-réactif. Flash de confirmation et retour visuel d'appairage.</div>
             </div>
         </div>
     </div>
 
     <!-- ========================================== -->
-    <!-- 2. VUE INTERFACE MICROPHONE                -->
+    <!-- 2. STRUCTURE DU COMPOSANT MICROPHONE       -->
     <!-- ========================================== -->
     <div id="view-microphone" class="view">
-        <div class="mic-status-node" id="mic-network-status">Déconnecté</div>
+        <div class="mic-status-badge" id="lbl-mic-status">NON APPAIRÉ</div>
         
-        <div class="mic-container">
-            <div class="mic-wrapper">
-                
-                <!-- REFACHONNAGE SKEUOMORPHE DE LA CAPSULE -->
-                <svg class="mic-head" id="mic-head-svg" viewBox="0 0 120 120" style="filter: drop-shadow(0px 10px 15px rgba(0,0,0,0.65));">
-                    <defs>
-                        <!-- Texture de maille de fer entrelacée tridimensionnelle -->
-                        <pattern id="real-mesh-texture" width="4" height="4" patternUnits="userSpaceOnUse">
-                            <rect width="4" height="4" fill="#141418"/>
-                            <path d="M 0 2 L 4 2 M 2 0 L 2 4" stroke="#2c2c35" stroke-width="1.2"/>
-                            <path d="M 0 2 L 4 2 M 2 0 L 2 4" stroke="#8b8b9c" stroke-width="0.4" opacity="0.75"/>
-                            <circle cx="2" cy="2" r="0.5" fill="#ffffff" opacity="0.35"/>
-                        </pattern>
-                        
-                        <!-- Ombrage sphérique lourd pour creuser le relief -->
-                        <radialGradient id="sphere-3d-shading" cx="35%" cy="30%" r="70%">
-                            <stop offset="0%" stop-color="#ffffff" stop-opacity="0.35"/>
-                            <stop offset="20%" stop-color="#aaaaaa" stop-opacity="0.05"/>
-                            <stop offset="60%" stop-color="#1e1e24" stop-opacity="0.75"/>
-                            <stop offset="88%" stop-color="#060608" stop-opacity="0.95"/>
-                            <stop offset="100%" stop-color="#000000" stop-opacity="1"/>
-                        </radialGradient>
+        <div class="mic-body-rack">
+            <svg class="mic-grille-svg" viewBox="0 0 120 120">
+                <defs>
+                    <pattern id="grille-mesh" width="5" height="5" patternUnits="userSpaceOnUse">
+                        <rect width="5" height="5" fill="#111"/>
+                        <path d="M 0 2.5 L 5 2.5 M 2.5 0 L 2.5 5" stroke="#333" stroke-width="1"/>
+                    </pattern>
+                    <radialGradient id="mesh-shading" cx="35%" cy="30%" r="70%">
+                        <stop offset="0%" stop-color="#fff" stop-opacity="0.2"/>
+                        <stop offset="100%" stop-color="#000" stop-opacity="0.9"/>
+                    </radialGradient>
+                </defs>
+                <circle cx="60" cy="55" r="42" fill="url(#grille-mesh)"/>
+                <circle cx="60" cy="55" r="42" fill="url(#mesh-shading)" style="mix-blend-mode: multiply;"/>
+                <rect x="20" y="92" width="80" height="8" rx="2" fill="#444"/>
+            </svg>
 
-                        <!-- Chrome poli ultra-réfléchissant -->
-                        <linearGradient id="heavy-chrome" x1="0%" y1="0%" x2="100%" y2="0%">
-                            <stop offset="0%" stop-color="#2a2a32"/>
-                            <stop offset="15%" stop-color="#8a8a98"/>
-                            <stop offset="25%" stop-color="#ffffff"/>
-                            <stop offset="45%" stop-color="#4e4e59"/>
-                            <stop offset="55%" stop-color="#ffffff"/>
-                            <stop offset="78%" stop-color="#353540"/>
-                            <stop offset="92%" stop-color="#9191a1"/>
-                            <stop offset="100%" stop-color="#121216"/>
-                        </linearGradient>
-                    </defs>
-                    
-                    <!-- Base texturée métallique -->
-                    <circle cx="60" cy="55" r="45" fill="url(#real-mesh-texture)"/>
-                    <!-- Occlusion volumétrique -->
-                    <circle cx="60" cy="55" r="45" fill="url(#sphere-3d-shading)" style="mix-blend-mode: multiply;"/>
-                    <!-- Hotspot brillant (Glossy studio flare) -->
-                    <ellipse cx="46" cy="30" rx="20" ry="10" fill="#ffffff" opacity="0.22" transform="rotate(-15, 46, 30)" style="filter: blur(1px);"/>
-                    
-                    <!-- Bagues d'assemblage en chrome lourd biseauté -->
-                    <rect x="12" y="92" width="96" height="9" rx="1" fill="url(#heavy-chrome)"/>
-                    <rect x="12" y="101" width="96" height="4" fill="#07070a"/>
-                </svg>
+            <div class="mic-led-ring" id="hw-led-ring"></div>
 
-                <div class="mic-led-ring" id="mic-led-indicator"></div>
+            <div class="mic-manche" id="hw-mic-handle">
+                <div class="mic-sticker-layer" id="sticker-container-node"></div>
+                <div class="mic-shading-layer"></div>
 
-                <div class="mic-handle-wrapper" id="mic-handle-zone">
-                    <div class="mic-handle-base" id="mic-handle-texture" style="background: linear-gradient(to right, #15151a, #33333d 30%, #6e6e7a 50%, #33333d 70%, #101014);"></div>
-                    
-                    <div class="mic-sticker-zone" id="sticker-runtime-destination"></div>
-                    
-                    <div class="mic-shadow-overlay"></div>
-
-                    <div class="mic-controls">
-                        <div class="switch-plate" id="hardware-mute-switch">
-                            <div class="switch-knob"></div>
-                        </div>
-                    </div>
-
-                    <div class="mic-engraving" id="engraving-container">
-                        <span id="lbl-mic-name">MIC #01</span>
+                <div class="switch-container">
+                    <div class="hardware-switch" id="hw-mute-toggle">
+                        <div class="switch-handle"></div>
                     </div>
                 </div>
-            </div>
-            
-            <div class="mic-skin-selector">
-                <button class="skin-btn active" onclick="setMicSkin('modern')">Moderne</button>
-                <button class="skin-btn" onclick="setMicSkin('vintage')">Rétro 50s</button>
-                <button class="skin-btn" onclick="setMicSkin('cyberpunk')">Cyberpunk</button>
+                <div class="mic-id-engraving" id="hw-engraving">CORE MIC #01</div>
             </div>
         </div>
-        <input type="file" id="hidden-file-input" accept="image/*" style="display:none;">
+
+        <button class="btn-action-hardware" id="btn-hardware-mic-arm" onclick="requestMicrophoneHardwareStream()">Armer le micro</button>
+        <input type="file" id="upload-sticker-hidden" accept="image/*" style="display:none;">
     </div>
 
     <!-- ========================================== -->
-    <!-- 3. VUE TABLE DE MIXAGE                     -->
+    <!-- 3. STRUCTURE DE LA CONSOLE DE MIXAGE       -->
     <!-- ========================================== -->
     <div id="view-mixer" class="view">
-        <div class="mixer-window">
-            
-            <div class="mixer-pages-container" id="mixer-pages-scroller">
+        <div class="mixer-container">
+            <div class="mixer-viewport" id="mixer-scroller-track">
                 
-                <!-- PAGE 1 : GÉNÉRALE -->
-                <div class="mixer-page" id="mx-page-1">
-                    <div class="page-header">
-                        <h2>Console Principale - Accès Direct</h2>
-                        <div id="connection-room-badge" style="font-size:12px; font-weight:bold; color:var(--neon-cyan);">ID: CHERCHE...</div>
+                <!-- PAGE UNIQUE CENTRALISÉE ET RESPONSIVE -->
+                <div class="mixer-slide-page">
+                    <div class="mixer-top-bar">
+                        <h2>CONSOLE ARCHITECTURE</h2>
+                        <button class="btn-mode-karaoke" id="btn-toggle-karaoke" onclick="toggleKaraokeGlobalMode()">Mode Karaoké</button>
                     </div>
 
-                    <div class="mixer-gateway-card">
-                        <div class="qr-holder" id="gateway-qrcode"></div>
+                    <div class="pairing-dashboard">
+                        <div class="qr-canvas-wrapper" id="mixer-qr-target"></div>
                         <div>
-                            <h4 style="margin-bottom:6px; font-size:15px;">Connecter des périphériques externes</h4>
-                            <p style="font-size:12px; color:#8a8a9e; line-height:1.4;">Scannez ce QR Code avec vos smartphones pour les appairer instantanément.</p>
+                            <h3 style="font-size:13px; margin-bottom:2px;" id="lbl-mixer-peer-id">ROOM ID: GENERATION...</h3>
+                            <p style="font-size:11px; color:#6c6c7d;">Scannez pour coupler un Micro ou un Projecteur esclave.</p>
                         </div>
                     </div>
 
-                    <div class="tracks-deck" id="simple-tracks-container"></div>
-                </div>
-
-                <!-- PAGE 2 : AVANCÉE -->
-                <div class="mixer-page" id="mx-page-2">
-                    <div class="page-header">
-                        <h2>Égalisation & Gains Avancés</h2>
-                    </div>
-                    <div class="tracks-deck" id="advanced-tracks-container"></div>
-                </div>
-
-                <!-- PAGE 3 : RACK D'EFFETS -->
-                <div class="mixer-page" id="mx-page-3">
-                    <div class="page-header">
-                        <h2>Rack de Périphériques FX Dynamiques</h2>
-                    </div>
-                    <div class="fx-rack-deck">
-                        <div class="fx-module" ondblclick="zoomFX(this)">
-                            <div class="fx-title">Tape Delay Pro</div>
-                            <div class="knobs-row" style="margin-top:20px;">
-                                <div class="knob-container">
-                                    <div class="rotary-knob" onmousedown="handleKnob(event, 'delay-time')"><div class="knob-pointer"></div></div>
-                                    <span>TIME</span>
-                                </div>
-                                <div class="knob-container">
-                                    <div class="rotary-knob" onmousedown="handleKnob(event, 'delay-feedback')"><div class="knob-pointer"></div></div>
-                                    <span>FEEDBACK</span>
-                                </div>
-                            </div>
-                            <button class="btn-square-hardware" onclick="toggleFX(event, this)">FX ON</button>
-                        </div>
-                        
-                        <div class="fx-module" ondblclick="zoomFX(this)">
-                            <div class="fx-title">Studio Reverb</div>
-                            <div class="knobs-row" style="margin-top:20px;">
-                                <div class="knob-container">
-                                    <div class="rotary-knob" onmousedown="handleKnob(event, 'reverb-room')"><div class="knob-pointer"></div></div>
-                                    <span>ROOM</span>
-                                </div>
-                                <div class="knob-container">
-                                    <div class="rotary-knob" onmousedown="handleKnob(event, 'reverb-mix')"><div class="knob-pointer"></div></div>
-                                    <span>MIX</span>
-                                </div>
-                            </div>
-                            <button class="btn-square-hardware" onclick="toggleFX(event, this)">FX ON</button>
-                        </div>
+                    <div class="console-deck" id="mixer-strips-deck">
+                        <!-- Les tranches de micro distantes s'injectent dynamiquement ici -->
                     </div>
                 </div>
-
-                <!-- PAGE 4 : CONFIGURATION MODULAIRE -->
-                <div class="mixer-page" id="mx-page-4">
-                    <div class="page-header">
-                        <h2>Espace Personnalisé</h2>
-                    </div>
-                    <div class="btn-page-plus" id="btn-custom-macro">+</div>
-                </div>
-
-                <!-- PAGE 5 : REGIE LUMIERE SYNCHRO -->
-                <div class="mixer-page" id="mx-page-light" style="display:none;">
-                    <div class="page-header">
-                        <h2>Régie Générale Lumière & Scène</h2>
-                    </div>
-                    <div style="background:rgba(0,0,0,0.3); padding:20px; border-radius:10px; border:1px solid #222;">
-                        <h4 style="margin-bottom:15px; font-size:14px; text-transform:uppercase;">Animations Prédéfinies</h4>
-                        <div style="display:flex; gap:10px; margin-bottom:25px;">
-                            <button class="skin-btn active" onclick="sendLightCommand('mode', 'brat')">Mode BRAT</button>
-                            <button class="skin-btn" onclick="sendLightCommand('mode', 'strobe')">Stroboscope Vocal</button>
-                            <button class="skin-btn" onclick="sendLightCommand('mode', 'ambient')">Ambiance Fixe</button>
-                        </div>
-                        <h4 style="margin-bottom:10px; font-size:14px; text-transform:uppercase;">Vitesse de Pulsation</h4>
-                        <div class="fader-rack" style="height:150px; width:40px; margin:20px 0;">
-                            <div class="fader-track-line"></div>
-                            <input type="range" min="1" max="100" value="50" class="fader-handle-input" id="light-speed-slider">
-                            <div class="fader-knob-physical" style="top:50%;"></div>
-                        </div>
-                    </div>
-                </div>
-
             </div>
 
-            <!-- Banderole Basse Spectrum -->
-            <div class="mixer-light-bar-control">
-                <span style="font-size:11px; font-weight:700; color:#8a8a9e;">TEINTE MATRIX</span>
-                <div class="color-spectrum-banner" id="spectrum-slider">
-                    <div class="spectrum-indicator" id="spectrum-cursor" style="left:50%;"></div>
+            <div class="mixer-footer-utility">
+                <span style="font-size:10px; font-weight:700; color:#5c5c6d;">LUMIÈRE ESCLAVE</span>
+                <div class="spectrum-bar" id="ui-spectrum-bar">
+                    <div class="spectrum-slider-handle" id="ui-spectrum-handle" style="left:50%;"></div>
                 </div>
-                <span style="font-size:11px; font-weight:700; color:var(--neon-green);" id="lbl-light-status">LUMIÈRE DISPONIBLE</span>
             </div>
-
-            <!-- Pagination Indicators -->
-            <div class="mixer-breadcrumbs" id="mixer-dots-panel">
-                <div class="breadcrumb-dot active"></div>
-                <div class="breadcrumb-dot"></div>
-                <div class="breadcrumb-dot"></div>
-                <div class="breadcrumb-dot"></div>
-                <div class="breadcrumb-dot" id="dot-light-page" style="display:none;"></div>
-            </div>
-
         </div>
     </div>
 
     <!-- ========================================== -->
-    <!-- 4. VUE INTERFACE SOURCE DE LUMIÈRE         -->
+    <!-- 4. STRUCTURE DE LA SOURCE DE LUMIÈRE       -->
     <!-- ========================================== -->
     <div id="view-light-source" class="view">
-        <div class="flip-card-3d-spatial" id="light-3d-card">
-            
-            <!-- FACE AVANT -->
-            <div class="light-face light-face-front" id="light-canvas-front">
-                <div id="light-text-info" style="font-size:14px; color:rgba(255,255,255,0.4); font-weight:bold; letter-spacing:1px;">EN ATTENTE DE LA REGIE P2P...</div>
-                <video class="light-video-layer" id="light-loop-video" loop muted playsinline src=""></video>
+        <div class="spatial-3d-card" id="ui-light-card">
+            <div class="light-panel-side light-side-front" id="light-emissive-surface">
+                <div class="pulsing-sync-animation" id="ui-light-sync-pulse"></div>
+                <div id="lbl-light-debug" style="font-size:11px; color:rgba(255,255,255,0.3); font-weight:bold; text-align:center;">SYNCHRONISATION P2P RECHÉCHÉE...<br><br>(Double-cliquez pour configurer)</div>
             </div>
-
-            <!-- FACE ARRIÈRE (FLIP 3D) -->
-            <div class="light-face light-face-back">
-                <div>
-                    <h2 style="font-size:18px; letter-spacing:1px; border-bottom:1px solid #444; padding-bottom:8px; margin-bottom:20px; color:var(--brat-green)">MODULE ARRIÈRE - BACK PANEL</h2>
-                    
-                    <div style="margin-bottom:25px;">
-                        <label style="font-size:11px; color:#8a8a9e; display:block; margin-bottom:8px; font-weight:bold;">LUMINOSITÉ MAXIMALE DE SÉCURITÉ</label>
-                        <div class="color-spectrum-banner" style="background:#222;" id="local-bright-slider">
-                            <div class="spectrum-indicator" style="left:100%; background:var(--brat-green)" id="local-bright-cursor"></div>
-                        </div>
-                    </div>
-
-                    <div style="margin-bottom:25px;">
-                        <label style="font-size:11px; color:#8a8a9e; display:block; margin-bottom:8px; font-weight:bold;">COMMUTATEUR DE CONTRÔLE</label>
-                        <div style="display:flex; gap:10px;">
-                            <button class="skin-btn active" id="btn-mode-auto">AUTO REGINA</button>
-                            <button class="skin-btn" id="btn-mode-force">FORCE BRAT LOCAL</button>
-                        </div>
-                    </div>
-
-                    <div style="margin-bottom:25px;">
-                        <label style="font-size:11px; color:#8a8a9e; display:block; margin-bottom:5px; font-weight:bold;">GAIN CAPTEUR AUDIO INTERNE</label>
-                        <div class="knob-container" style="align-items:flex-start;">
-                            <div class="rotary-knob" onmousedown="handleKnob(event, 'local-mic-gain')"><div class="knob-pointer"></div></div>
-                        </div>
-                    </div>
-                </div>
-
-                <button class="btn-square-hardware" style="width:100%; height:45px; font-size:12px; border-color:var(--brat-green); color:#fff;" id="btn-close-backpanel">VALIDER LES FLUX</button>
+            <div class="light-panel-side light-side-back">
+                <h3 style="color:var(--neon-green); font-size:14px; margin-bottom:10px;">PANNEAU CELLULE RECEPTIVE</h3>
+                <p style="font-size:12px; color:#6c6c7d;">Ce terminal reçoit l'état colorimétrique et l'intensité audio-réactive de la console régie en temps réel.</p>
+                <button class="btn-strip-action" style="height:40px; border-color:#444;" onclick="document.getElementById('ui-light-card').classList.remove('flipped')">Retour au diffuseur</button>
             </div>
-
         </div>
     </div>
 
     <!-- ========================================== -->
-    <!-- LOGIQUE LOGICIELLE DE BASE (JS)            -->
+    <!-- CODE LOGICIEL NATIF                       -->
     <!-- ========================================== -->
     <script>
-        let currentMode = 'menu';
-        let peerInstance = null;
-        let p2pRoomId = '';
-        let connectedPeers = {};
+        // Configuration de l'état système
+        let activeInterfaceMode = 'menu';
+        let hardwarePeerInstance = null;
+        let globalDataChannels = {};
+        let activeAudioNodes = {};
+        let localMicrophoneStream = null;
+        let localMuteState = false;
+        let screenWakeLockInstance = null;
+        let karaokeProfileActive = false;
+        let currentTargetTeinteHex = '#00ffff';
         
-        let audioCtxHost = null;
-        let incomingAudioNodes = {}; 
-        let activeSelectedSticker = null;
+        let audioContextRégieInstance = null;
 
-        function switchView(targetView) {
+        // ==========================================
+        // GESTIONNAIRE DE SÉCURITÉ WAKE LOCK
+        // ==========================================
+        async function activateScreenWakeLock() {
+            if ('wakeLock' in navigator) {
+                try {
+                    screenWakeLockInstance = await navigator.wakeLock.request('screen');
+                    console.log("Système Anti-Veille Écran Armé.");
+                } catch (err) {
+                    console.warn("Échec de l'armement anti-veille :", err.message);
+                }
+            }
+        }
+
+        function releaseScreenWakeLock() {
+            if (screenWakeLockInstance !== null) {
+                screenWakeLockInstance.release().then(() => {
+                    screenWakeLockInstance = null;
+                    console.log("Système Anti-Veille Écran Désactivé.");
+                });
+            }
+        }
+
+        // Ré-armer la veille si l'utilisateur change d'onglet et revient
+        document.addEventListener('visibilitychange', async () => {
+            if (screenWakeLockInstance !== null && document.visibilityState === 'visible') {
+                await activateScreenWakeLock();
+            }
+        });
+
+        // ==========================================
+        // MOTEUR DE NAVIGATION INTERFACE
+        // ==========================================
+        function navigateSession(targetView) {
             document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
-            const dest = document.getElementById(`view-${targetView}`);
-            if(dest) dest.classList.add('active');
-            
-            const closeBtn = document.getElementById('global-close-btn');
+            const viewTarget = document.getElementById(`view-${targetView}`);
+            if(viewTarget) viewTarget.classList.add('active');
+
+            const btnKill = document.getElementById('session-kill-btn');
             if(targetView === 'menu') {
-                closeBtn.style.display = 'none';
-                currentMode = 'menu';
+                btnKill.style.display = 'none';
+                activeInterfaceMode = 'menu';
+                releaseScreenWakeLock();
             } else {
-                closeBtn.style.display = 'flex';
-                currentMode = targetView;
-                initModeArchitecture(targetView);
+                btnKill.style.display = 'flex';
+                activeInterfaceMode = targetView;
+                activateScreenWakeLock(); // Protection écran actif dès qu'on sort du menu
+                bootModeProcessArchitecture(targetView);
             }
         }
 
-        document.getElementById('global-close-btn').addEventListener('click', () => {
-            switchView('menu');
+        document.getElementById('session-kill-btn').addEventListener('click', () => {
+            navigateSession('menu');
         });
 
-        function initModeArchitecture(mode) {
+        function bootModeProcessArchitecture(mode) {
+            const nodeHashRoom = window.location.hash.replace('#', '');
+            
             if(mode === 'mixer') {
-                initMixerHostEngine();
+                if(!audioContextRégieInstance) {
+                    audioContextRégieInstance = new (window.AudioContext || window.webkitAudioContext)();
+                }
+                initConsoleMixerProcess();
             } else if(mode === 'microphone') {
-                initMicrophoneClientEngine();
+                initMicrophoneProcess(nodeHashRoom);
             } else if(mode === 'light-source') {
-                initLightSourceEngine();
+                initLightSourceProcess(nodeHashRoom);
             }
         }
 
-        // ========================================================
-        // ENGINE 2 : MICROPHONE & STICKERS
-        // ========================================================
-        let micCustomName = "MIC #01";
-        let isMutedLocal = false;
-        let myLocalStream = null;
-
-        function initMicrophoneClientEngine() {
-            setMicSkin('modern');
-            setupStickerDoubleTap();
-            setupHardwareMuteSwitch();
-            setupInteractiveRename();
+        // ==========================================
+        // PIPELINE : COMPOSANT MICROPHONE CLIENT
+        // ==========================================
+        function initMicrophoneProcess(roomTarget) {
+            document.getElementById('hw-led-ring').style.background = varColorHexLookup('--neon-cyan');
+            setupMicrophoneInteractions();
             
-            const targetHost = window.location.hash.replace('#', '');
-            initPeerConnection(false, targetHost);
-        }
-
-        function setMicSkin(skin) {
-            const handle = document.getElementById('mic-handle-texture');
-            const led = document.getElementById('mic-led-indicator');
-            
-            document.querySelectorAll('.skin-btn').forEach(b => b.classList.remove('active'));
-            
-            if(skin === 'modern') {
-                handle.style.background = "linear-gradient(to right, #15151a, #33333d 30%, #6e6e7a 50%, #33333d 70%, #101014)";
-                led.style.background = isMutedLocal ? "#600" : "#00f3ff";
-                if(!isMutedLocal) led.style.boxShadow = "0 0 12px #00f3ff, inset 0 1px 2px rgba(255,255,255,0.4)";
-            } else if(skin === 'vintage') {
-                handle.style.background = "linear-gradient(to right, #444, #e1e1e8 25%, #888894 50%, #f0f0f5 75%, #222)";
-                led.style.background = isMutedLocal ? "#400" : "#fffb00";
-                if(!isMutedLocal) led.style.boxShadow = "0 0 10px #fffb00";
-            } else if(skin === 'cyberpunk') {
-                handle.style.background = "linear-gradient(145deg, #09090e, #1c1c30)";
-                led.style.background = isMutedLocal ? "#ff0055" : "#39ff14";
-                if(!isMutedLocal) led.style.boxShadow = "0 0 15px #39ff14";
+            if(!hardwarePeerInstance) {
+                setupNetworkP2PLink(false, roomTarget);
             }
         }
 
-        function setupHardwareMuteSwitch() {
-            const btn = document.getElementById('hardware-mute-switch');
-            btn.onclick = () => {
-                isMutedLocal = !isMutedLocal;
-                if(isMutedLocal) btn.classList.add('muted');
-                else btn.classList.remove('muted');
-                
-                if(myLocalStream) {
-                    myLocalStream.getAudioTracks().forEach(t => t.enabled = !isMutedLocal);
+        function setupMicrophoneInteractions() {
+            const muteSwitch = document.getElementById('hw-mute-toggle');
+            muteSwitch.onclick = () => {
+                localMuteState = !localMuteState;
+                if(localMuteState) {
+                    muteSwitch.classList.add('muted');
+                    document.getElementById('hw-led-ring').style.background = varColorHexLookup('--neon-red');
+                } else {
+                    muteSwitch.classList.remove('muted');
+                    document.getElementById('hw-led-ring').style.background = varColorHexLookup('--neon-cyan');
                 }
-                const activeSkin = document.querySelector('.mic-skin-selector .active')?.innerText.toLowerCase() || 'modern';
-                setMicSkin(activeSkin.includes('rétro') ? 'vintage' : activeSkin);
-                sendDataToHost({type: 'MUTE_STATUS', value: isMutedLocal});
-            };
-        }
-
-        function setupInteractiveRename() {
-            const container = document.getElementById('engraving-container');
-            const lbl = document.getElementById('lbl-mic-name');
-            
-            container.onclick = () => {
-                if(document.getElementById('txt-mic-rename')) return;
-                const input = document.createElement('input');
-                input.id = 'txt-mic-rename';
-                input.value = micCustomName;
-                lbl.style.display = 'none';
-                container.appendChild(input);
-                input.focus();
                 
-                input.onblur = () => {
-                    if(input.value.trim() !== "") micCustomName = input.value.toUpperCase();
-                    lbl.innerText = micCustomName;
-                    lbl.style.display = 'inline';
-                    input.remove();
-                    sendDataToHost({type: 'RENAME', value: micCustomName});
-                };
-                input.onkeydown = (e) => { if(e.key === 'Enter') input.blur(); };
-            };
-        }
-
-        function setupStickerDoubleTap() {
-            const handleZone = document.getElementById('mic-handle-zone');
-            handleZone.ondblclick = (e) => {
-                if(e.target !== handleZone && e.target.id !== 'mic-handle-texture') return;
-                document.getElementById('hidden-file-input').click();
+                if(localMicrophoneStream) {
+                    localMicrophoneStream.getAudioTracks().forEach(track => track.enabled = !localMuteState);
+                }
+                transmitDataPacketToHost({ type: 'SIGNAL_MUTE', value: localMuteState });
             };
 
-            document.getElementById('hidden-file-input').onchange = (e) => {
+            const manche = document.getElementById('hw-mic-handle');
+            manche.ondblclick = (e) => {
+                if(e.target === manche || e.target.parentNode === manche) {
+                    document.getElementById('upload-sticker-hidden').click();
+                }
+            };
+
+            document.getElementById('upload-sticker-hidden').onchange = (e) => {
                 const file = e.target.files[0];
-                if(!file) return;
-                const reader = new FileReader();
-                reader.onload = (event) => { createStickerElement(event.target.result); };
-                reader.readAsDataURL(file);
+                if(file) {
+                    const r = new FileReader();
+                    r.onload = (ev) => injectStickerToHandle(ev.target.result);
+                    r.readAsDataURL(file);
+                }
             };
         }
 
-        function createStickerElement(src) {
-            const zone = document.getElementById('sticker-runtime-destination');
-            const wrapper = document.createElement('div');
-            wrapper.className = 'sticker-wrapper selected';
-            wrapper.style.left = '30px';
-            wrapper.style.top = '100px';
-            wrapper.style.width = '60px';
-            wrapper.style.height = '60px';
+        function injectStickerToHandle(src) {
+            const container = document.getElementById('sticker-container-node');
+            const wrap = document.createElement('div');
+            wrap.className = 'sticker-node';
+            wrap.style.left = '20px'; wrap.style.top = '50px';
             
-            let state = { x: 30, y: 100, w: 60, h: 60, r: 0 };
+            const img = document.createElement('img'); img.src = src;
+            const del = document.createElement('div'); del.className = 'del-btn'; del.innerText = '×';
+            del.onclick = (e) => { e.stopPropagation(); wrap.remove(); };
 
-            const img = document.createElement('img');
-            img.src = src;
-            img.className = 'sticker-img';
-            
-            const border = document.createElement('div');
-            border.className = 'sticker-border';
+            wrap.appendChild(img); wrap.appendChild(del);
+            container.appendChild(wrap);
 
-            const btnDel = document.createElement('div');
-            btnDel.className = 'sticker-btn sticker-del';
-            btnDel.innerText = '×';
-            btnDel.onclick = (e) => { e.stopPropagation(); wrapper.remove(); };
-
-            const btnHandle = document.createElement('div');
-            btnHandle.className = 'sticker-btn sticker-handle';
-            btnHandle.innerText = '⤗';
-
-            wrapper.appendChild(img);
-            wrapper.appendChild(border);
-            wrapper.appendChild(btnDel);
-            wrapper.appendChild(btnHandle);
-            zone.appendChild(wrapper);
-
-            if(activeSelectedSticker) activeSelectedSticker.classList.remove('selected');
-            activeSelectedSticker = wrapper;
-
-            wrapper.onmousedown = (e) => {
-                if(e.target.classList.contains('sticker-btn')) return;
-                e.stopPropagation();
-                if(activeSelectedSticker) activeSelectedSticker.classList.remove('selected');
-                activeSelectedSticker = wrapper;
-                wrapper.classList.add('selected');
-
-                let startX = e.clientX; let startY = e.clientY;
-                let initX = state.x; let initY = state.y;
-
-                document.onmousemove = (mv) => {
-                    state.x = initX + (mv.clientX - startX);
-                    state.y = initY + (mv.clientY - startY);
-                    wrapper.style.left = `${state.x}px`;
-                    wrapper.style.top = `${state.y}px`;
-                };
-                document.onmouseup = () => { document.onmousemove = null; document.onmouseup = null; };
-            };
-
-            btnHandle.onmousedown = (e) => {
-                e.stopPropagation();
-                let rect = wrapper.getBoundingClientRect();
-                let centerX = rect.left + rect.width / 2;
-                let centerY = rect.top + rect.height / 2;
-                let initDiagonal = Math.hypot(e.clientX - centerX, e.clientY - centerY);
-                let initWidth = state.w; let initHeight = state.h;
-                let initAngle = Math.atan2(e.clientY - centerY, e.clientX - centerX) - state.r;
-
-                document.onmousemove = (mv) => {
-                    let currentAngle = Math.atan2(mv.clientY - centerY, mv.clientX - centerX);
-                    state.r = currentAngle - initAngle;
-                    let currentDiagonal = Math.hypot(mv.clientX - centerX, mv.clientY - centerY);
-                    let ratio = currentDiagonal / initDiagonal;
-                    state.w = Math.max(25, initWidth * ratio);
-                    state.h = Math.max(25, initHeight * ratio);
-
-                    wrapper.style.width = `${state.w}px`;
-                    wrapper.style.height = `${state.h}px`;
-                    wrapper.style.transform = `rotate(${state.r}rad)`;
-                };
-                document.onmouseup = () => { document.onmousemove = null; document.onmouseup = null; };
-            };
-
-            // Touch events support
-            wrapper.addEventListener('touchstart', (e) => {
-                if(e.target.classList.contains('sticker-btn')) return;
-                if(activeSelectedSticker) activeSelectedSticker.classList.remove('selected');
-                activeSelectedSticker = wrapper;
-                wrapper.classList.add('selected');
-                let touch = e.touches[0];
-                let startX = touch.clientX; let startY = touch.clientY;
-                let initX = state.x; let initY = state.y;
-
-                let touchMoveHandler = (mv) => {
-                    let t2 = mv.touches[0];
-                    state.x = initX + (t2.clientX - startX);
-                    state.y = initY + (t2.clientY - startY);
-                    wrapper.style.left = `${state.x}px`;
-                    wrapper.style.top = `${state.y}px`;
-                };
-                wrapper.addEventListener('touchmove', touchMoveHandler);
-                wrapper.addEventListener('touchend', () => { wrapper.removeEventListener('touchmove', touchMoveHandler); }, {once: true});
-            });
-
-            btnHandle.addEventListener('touchstart', (e) => {
-                e.stopPropagation();
-                let touch = e.touches[0];
-                let rect = wrapper.getBoundingClientRect();
-                let centerX = rect.left + rect.width / 2;
-                let centerY = rect.top + rect.height / 2;
-                let initDiagonal = Math.hypot(touch.clientX - centerX, touch.clientY - centerY);
-                let initWidth = state.w; let initHeight = state.h;
-                let initAngle = Math.atan2(touch.clientY - centerY, touch.clientX - centerX) - state.r;
-
-                let touchMoveCombo = (mv) => {
-                    let t2 = mv.touches[0];
-                    let currentAngle = Math.atan2(t2.clientY - centerY, t2.clientX - centerX);
-                    state.r = currentAngle - initAngle;
-                    let currentDiagonal = Math.hypot(t2.clientX - centerX, t2.clientY - centerY);
-                    let ratio = currentDiagonal / initDiagonal;
-                    state.w = Math.max(25, initWidth * ratio);
-                    state.h = Math.max(25, initHeight * ratio);
-
-                    wrapper.style.width = `${state.w}px`;
-                    wrapper.style.height = `${state.h}px`;
-                    wrapper.style.transform = `rotate(${state.r}rad)`;
-                };
-                btnHandle.addEventListener('touchmove', touchMoveCombo);
-                btnHandle.addEventListener('touchend', () => { btnHandle.removeEventListener('touchmove', touchMoveCombo); }, {once: true});
-            });
+            // Drag simple pour terminaux mobiles et souris
+            wrap.onmousedown = (e) => handleDragSticker(e, wrap, container);
+            wrap.ontouchstart = (e) => handleDragSticker(e.touches[0], wrap, container);
         }
 
-        document.getElementById('view-microphone').addEventListener('mousedown', (e) => {
-            if(!e.target.closest('.sticker-wrapper') && activeSelectedSticker) {
-                activeSelectedSticker.classList.remove('selected');
-                activeSelectedSticker = null;
+        function handleDragSticker(e, target, container) {
+            let startX = e.clientX; let startY = e.clientY;
+            let bounds = container.getBoundingClientRect();
+            let currentLeft = parseInt(target.style.left) || 0;
+            let currentTop = parseInt(target.style.top) || 0;
+
+            function move(ev) {
+                let clientX = ev.clientX || (ev.touches ? ev.touches[0].clientX : startX);
+                let clientY = ev.clientY || (ev.touches ? ev.touches[0].clientY : startY);
+                let nextX = currentLeft + (clientX - startX);
+                let nextY = currentTop + (clientY - startY);
+                target.style.left = `${Math.max(0, Math.min(bounds.width - 40, nextX))}px`;
+                target.style.top = `${Math.max(0, Math.min(bounds.height - 40, nextY))}px`;
             }
-        });
-
-        // ========================================================
-        // ENGINE 3 : TABLE DE MIXAGE (HOST / AUDIO)
-        // ========================================================
-        let pageIndicesScroller = 0;
-        let activeLightPeerConnection = null;
-
-        function initMixerHostEngine() {
-            setupMixerSwipePagination();
-            setupColorSpectrumBanner();
-            initPeerConnection(true, null);
+            function stop() { document.onmousemove = document.ontouchmove = document.onmouseup = document.ontouchend = null; }
+            document.onmousemove = document.ontouchmove = move;
+            document.onmouseup = document.ontouchend = stop;
         }
 
-        function setupMixerSwipePagination() {
-            const scroller = document.getElementById('mixer-pages-scroller');
-            const dots = document.querySelectorAll('#mixer-dots-panel .breadcrumb-dot');
-            
-            scroller.onscroll = () => {
-                let index = Math.round(scroller.scrollLeft / window.innerWidth);
-                dots.forEach((d, i) => {
-                    if(i === index) d.classList.add('active');
-                    else d.classList.remove('active');
-                });
-                pageIndicesScroller = index;
-            };
-        }
+        function requestMicrophoneHardwareStream() {
+            const btn = document.getElementById('btn-hardware-mic-arm');
+            const targetId = window.location.hash.replace('#', '');
 
-        function buildAudioHardwareTopology(trackId, stream) {
-            if(!audioCtxHost) audioCtxHost = new (window.AudioContext || window.webkitAudioContext)();
-            let source = audioCtxHost.createMediaStreamSource(stream);
-            
-            let eqLow = audioCtxHost.createBiquadFilter(); eqLow.type = "lowshelf"; eqLow.frequency.value = 200;
-            let eqMid = audioCtxHost.createBiquadFilter(); eqMid.type = "peaking"; eqMid.frequency.value = 2000;
-            let eqHigh = audioCtxHost.createBiquadFilter(); eqHigh.type = "highshelf"; eqHigh.frequency.value = 8000;
-            
-            let volumeNode = audioCtxHost.createGain();
-            let monitorRoutingNode = audioCtxHost.createGain(); 
-            let analyserNode = audioCtxHost.createAnalyser();
-            analyserNode.fftSize = 32;
+            if(!targetId) {
+                alert("Réseau : Veuillez scanner le code QR d'une console régie active avant d'armer.");
+                return;
+            }
 
-            source.connect(eqLow);
-            eqLow.connect(eqMid);
-            eqMid.connect(eqHigh);
-            eqHigh.connect(volumeNode);
-            
-            volumeNode.connect(analyserNode);
-            volumeNode.connect(monitorRoutingNode);
-            
-            monitorRoutingNode.connect(audioCtxHost.destination);
-            monitorRoutingNode.gain.value = 1.0; 
-
-            incomingAudioNodes[trackId] = {
-                stream: stream,
-                eq: { low: eqLow, mid: eqMid, high: eqHigh },
-                volume: volumeNode,
-                monitor: monitorRoutingNode,
-                analyser: analyserNode
-            };
-
-            appendHardwareStripToDOM(trackId);
-            runVUMeterEngine(trackId);
-        }
-
-        function appendHardwareStripToDOM(id) {
-            const p1 = document.getElementById('simple-tracks-container');
-            const p2 = document.getElementById('advanced-tracks-container');
-            const label = connectedPeers[id]?.name || `MICRO #${id.substring(0,3)}`;
-
-            const strip1 = document.createElement('div');
-            strip1.className = 'mixer-strip';
-            strip1.id = `strip-simple-${id}`;
-            strip1.innerHTML = `
-                <div class="strip-name">${label}</div>
-                <div class="vu-meter-slot"><div class="vu-bar" id="vu-bar-simple-${id}"></div></div>
-                <div class="fader-rack" style="height:140px;">
-                    <div class="fader-track-line"></div>
-                    <input type="range" min="0" max="100" value="75" class="fader-handle-input" oninput="bindFaderVolume('${id}', this.value)">
-                    <div class="fader-knob-physical" id="fader-knob-simple-${id}" style="top:25%;"></div>
-                </div>
-                <button class="btn-square-hardware" id="btn-mute-${id}" onclick="toggleTrackMute('${id}')">MUTE</button>
-            `;
-            p1.appendChild(strip1);
-
-            const strip2 = document.createElement('div');
-            strip2.className = 'mixer-strip';
-            strip2.id = `strip-adv-${id}`;
-            strip2.style.width = "180px";
-            strip2.innerHTML = `
-                <div class="strip-name">${label} (ADV)</div>
-                <div class="knobs-row">
-                    <div class="knob-container">
-                        <div class="rotary-knob" onmousedown="handleKnob(event, 'low', '${id}')"><div class="knob-pointer"></div></div>
-                        <span>LOW</span>
-                    </div>
-                    <div class="knob-container">
-                        <div class="rotary-knob" onmousedown="handleKnob(event, 'mid', '${id}')"><div class="knob-pointer"></div></div>
-                        <span>MID</span>
-                    </div>
-                    <div class="knob-container">
-                        <div class="rotary-knob" onmousedown="handleKnob(event, 'high', '${id}')"><div class="knob-pointer"></div></div>
-                        <span>HIGH</span>
-                    </div>
-                </div>
-                <div class="fader-rack" style="height:120px; width:30px;">
-                    <div class="fader-track-line"></div>
-                    <input type="range" min="0" max="100" value="75" class="fader-handle-input" oninput="bindFaderVolume('${id}', this.value)">
-                    <div class="fader-knob-physical" id="fader-knob-adv-${id}" style="top:25%;"></div>
-                </div>
-                <button class="btn-square-hardware monitor-active" id="btn-monitor-${id}" onclick="toggleNativeMonitoring('${id}')" style="width:75px; font-size:9px; border-color:var(--neon-green);">MONITOR ON</button>
-            `;
-            p2.appendChild(strip2);
-        }
-
-        function bindFaderVolume(id, val) {
-            const pct = 100 - val;
-            const targetGain = val / 100;
-            if(incomingAudioNodes[id]) incomingAudioNodes[id].volume.gain.value = targetGain;
-            
-            const kSimple = document.getElementById(`fader-knob-simple-${id}`);
-            const kAdv = document.getElementById(`fader-knob-adv-${id}`);
-            if(kSimple) kSimple.style.top = `${pct}%`;
-            if(kAdv) kAdv.style.top = `${pct}%`;
-        }
-
-        function toggleTrackMute(id) {
-            const btn = document.getElementById(`btn-mute-${id}`);
-            if(!incomingAudioNodes[id]) return;
-            
-            if(!btn.classList.contains('active')) {
+            navigator.mediaDevices.getUserMedia({
+                audio: { echoCancellation: false, noiseSuppression: false, autoGainControl: false }
+            })
+            .then((stream) => {
+                localMicrophoneStream = stream;
+                btn.innerText = "MICRO EN DIRECT";
                 btn.classList.add('active');
-                incomingAudioNodes[id].volume.gain.value = 0;
-            } else {
-                btn.classList.remove('active');
-                incomingAudioNodes[id].volume.gain.value = 0.75;
+
+                if(hardwarePeerInstance && targetId) {
+                    hardwarePeerInstance.call(targetId, stream);
+                }
+            })
+            .catch((err) => {
+                console.error(err);
+                alert("Protocole de sécurité Audio : L'accès au microphone requiert une connexion sécurisée HTTPS ou Localhost.");
+            });
+        }
+
+        // ==========================================
+        // PIPELINE : CONSOLE DE MIXAGE (HOST ENGINE)
+        // ==========================================
+        function initConsoleMixerProcess() {
+            setupMixerFooterControls();
+            if(!hardwarePeerInstance) {
+                setupNetworkP2PLink(true, null);
             }
         }
 
-        function toggleNativeMonitoring(id) {
-            const btn = document.getElementById(`btn-monitor-${id}`);
-            if(!incomingAudioNodes[id]) return;
+        function setupMixerFooterControls() {
+            const bar = document.getElementById('ui-spectrum-bar');
+            const handle = document.getElementById('ui-spectrum-handle');
             
-            if(btn.classList.contains('monitor-active')) {
-                btn.classList.remove('monitor-active');
-                btn.style.borderColor = "#111";
-                btn.innerText = "MONITOR OFF";
-                incomingAudioNodes[id].monitor.gain.value = 0.0;
-            } else {
-                btn.classList.add('monitor-active');
-                btn.style.borderColor = "var(--neon-green)";
-                btn.innerText = "MONITOR ON";
-                incomingAudioNodes[id].monitor.gain.value = 1.0;
+            function updateColorFromClick(clientX) {
+                let rect = bar.getBoundingClientRect();
+                let pct = Math.max(0, Math.min(100, ((clientX - rect.left) / rect.width) * 100));
+                handle.style.left = `${pct}%`;
+
+                // Conversion basique pourcentage -> spectre hex
+                let hexColors = ['#ff0000', '#ffff00', '#00ff00', '#00ffff', '#0000ff', '#ff00ff', '#ff0000'];
+                let index = Math.min(Math.floor((pct / 100) * (hexColors.length - 1)), hexColors.length - 2);
+                currentTargetTeinteHex = hexColors[index];
+
+                transmitDataPacketToHost({ type: 'LUMIERE_COLOR_SYNC', color: currentTargetTeinteHex });
             }
+
+            bar.onmousedown = (e) => {
+                updateColorFromClick(e.clientX);
+                document.onmousemove = (mv) => updateColorFromClick(mv.clientX);
+                document.onmouseup = () => document.onmousemove = null;
+            };
+            bar.ontouchstart = (e) => {
+                updateColorFromClick(e.touches[0].clientX);
+                document.ontouchmove = (mv) => updateColorFromClick(mv.touches[0].clientX);
+                document.ontouchend = () => document.ontouchmove = null;
+            };
         }
 
-        function runVUMeterEngine(id) {
-            const node = incomingAudioNodes[id];
+        // RACK D'EFFETS PROFESSIONNELS AUDIO-NUMÉRIQUES (WEB AUDIO API)
+        function injectAudioProcessingTopology(peerId, stream) {
+            if(audioContextRégieInstance.state === 'suspended') {
+                audioContextRégieInstance.resume();
+            }
+
+            let ctx = audioContextRégieInstance;
+            let srcNode = ctx.createMediaStreamSource(stream);
+            
+            // 1. Module Compresseur Dynamique Studio
+            let compNode = ctx.createDynamicsCompressor();
+            compNode.threshold.value = -24; compNode.knee.value = 30;
+            compNode.ratio.value = 4; compNode.attack.value = 0.003; compNode.release.value = 0.25;
+
+            // 2. Module Vocal Doubler / Chorus
+            let chorusDelay = ctx.createDelay(); chorusDelay.delayTime.value = 0.025;
+            let chorusLfo = ctx.createOscillator(); chorusLfo.frequency.value = 1.5;
+            let chorusDepth = ctx.createGain(); chorusDepth.gain.value = 0.002;
+            chorusLfo.connect(chorusDepth); chorusDepth.connect(chorusDelay.delayTime);
+            chorusLfo.start();
+
+            // 3. Module Spatial Ping-Pong Delay Filtré
+            let echoNode = ctx.createDelay(); echoNode.delayTime.value = 0.35;
+            let echoFilter = ctx.createBiquadFilter(); echoFilter.type = 'lowpass'; echoFilter.frequency.value = 1500;
+            let echoFeedback = ctx.createGain(); echoFeedback.gain.value = 0.4;
+            echoNode.connect(echoFilter); echoFilter.connect(echoFeedback); echoFeedback.connect(echoNode);
+
+            // 4. Module Réverbération Algorithmique Chaleureuse
+            let revNode = ctx.createDelay(); revNode.delayTime.value = 0.06;
+            let revFeedback = ctx.createGain(); revFeedback.gain.value = 0.5;
+            let revFilter = ctx.createBiquadFilter(); revFilter.type = 'lowpass'; revFilter.frequency.value = 3000;
+            revNode.connect(revFilter); revFilter.connect(revFeedback); revFeedback.connect(revNode);
+
+            // Noeuds utilitaires de routage
+            let mainVolumeNode = ctx.createGain(); mainVolumeNode.gain.value = 0.8;
+            let analyserNode = ctx.createAnalyser(); analyserNode.fftSize = 32;
+
+            // Structure série par défaut bypassable électroniquement via gains
+            let nodeTrackWrapper = {
+                src: srcNode, comp: compNode, chorus: chorusDelay, echo: echoNode, rev: revNode,
+                vol: mainVolumeNode, ana: analyserNode,
+                fxState: { comp: false, chorus: false, echo: false, rev: false }
+            };
+
+            // Connexion linéaire modulaire
+            srcNode.connect(compNode);
+            compNode.connect(chorusDelay);
+            chorusDelay.connect(echoNode);
+            echoNode.connect(revNode);
+            revNode.connect(mainVolumeNode);
+            mainVolumeNode.connect(analyserNode);
+            analyserNode.connect(ctx.destination);
+
+            activeAudioNodes[peerId] = nodeTrackWrapper;
+
+            // Construction physique de la tranche dans le DOM
+            generateConsoleStripUI(peerId);
+            runVisualVUMeterLoop(peerId);
+
+            // Si le mode Karaoké global est déjà actif, on applique immédiatement les effets
+            if(karaokeProfileActive) applyKaraokePresetToTrack(peerId);
+        }
+
+        function generateConsoleStripUI(id) {
+            const container = document.getElementById('mixer-strips-deck');
+            if(document.getElementById(`strip-${id}`)) return;
+
+            const strip = document.createElement('div');
+            strip.className = 'console-strip';
+            strip.id = `strip-${id}`;
+            strip.innerHTML = `
+                <div class="strip-header-label" id="lbl-name-${id}">MIC #${id.substring(0,4)}</div>
+                <div class="vu-container"><div class="vu-indicator-bar" id="vu-${id}"></div></div>
+                <div class="fader-well">
+                    <div class="fader-slot-line"></div>
+                    <input type="range" min="0" max="100" value="80" class="fader-range-input" oninput="updateTrackGain('${id}', this.value)">
+                    <div class="fader-cap-hardware" id="cap-${id}" style="top:20%;"></div>
+                </div>
+                <button class="btn-strip-action btn-plus" onclick="toggleEffectsDropdownDOM('${id}')">+</button>
+                <button class="btn-strip-action" id="btn-mute-${id}" onclick="toggleTrackMuteState('${id}')">MUTE</button>
+                
+                <div class="effects-rack-dropdown" id="dropdown-${id}">
+                    <div class="fx-toggle-row" onclick="toggleSingleHardwareFX('${id}', 'comp')"><span>Compresseur</span><input type="checkbox" id="chk-${id}-comp"></div>
+                    <div class="fx-toggle-row" onclick="toggleSingleHardwareFX('${id}', 'chorus')"><span>Chorus</span><input type="checkbox" id="chk-${id}-chorus"></div>
+                    <div class="fx-toggle-row" onclick="toggleSingleHardwareFX('${id}', 'echo')"><span>Écho</span><input type="checkbox" id="chk-${id}-echo"></div>
+                    <div class="fx-toggle-row" onclick="toggleSingleHardwareFX('${id}', 'rev')"><span>Réverb</span><input type="checkbox" id="chk-${id}-rev"></div>
+                </div>
+            `;
+            container.appendChild(strip);
+        }
+
+        function toggleEffectsDropdownDOM(id) {
+            const d = document.getElementById(`dropdown-${id}`);
+            if(d) d.classList.toggle('visible');
+        }
+
+        function toggleSingleHardwareFX(trackId, fxKey) {
+            const node = activeAudioNodes[trackId];
             if(!node) return;
-            const bufferLength = node.analyser.frequencyBinCount;
-            const dataArray = new Uint8Array(bufferLength);
-            const bar = document.getElementById(`vu-bar-simple-${id}`);
-
-            function draw() {
-                if(!incomingAudioNodes[id]) return;
-                node.analyser.getByteFrequencyData(dataArray);
-                let total = 0;
-                for(let i=0; i<bufferLength; i++) total += dataArray[i];
-                let volumePercent = (total / bufferLength) / 140 * 100;
-                
-                if(bar) bar.style.height = `${Math.min(100, volumePercent)}%`;
-                if(activeLightPeerConnection) {
-                    activeLightPeerConnection.send({type: 'AMPLITUDE_DATA', value: volumePercent / 100});
-                }
-                requestAnimationFrame(draw);
-            }
-            draw();
-        }
-
-        function handleKnob(e, frequencyBand, peerId = null) {
-            e.preventDefault();
-            let startY = e.clientY;
-            let currentRotation = 0;
-            const targetPointer = e.target.querySelector('.knob-pointer') || e.target;
-
-            document.onmousemove = (mv) => {
-                let deltaY = startY - mv.clientY;
-                currentRotation = Math.min(135, Math.max(-135, currentRotation + deltaY));
-                startY = mv.clientY;
-                
-                if(targetPointer) targetPointer.style.transform = `translateX(-50%) rotate(${currentRotation}deg)`;
-                
-                if(peerId && incomingAudioNodes[peerId]) {
-                    let gainVal = (currentRotation / 135) * 12;
-                    if(frequencyBand === 'low') incomingAudioNodes[peerId].eq.low.gain.value = gainVal;
-                    if(frequencyBand === 'mid') incomingAudioNodes[peerId].eq.mid.gain.value = gainVal;
-                    if(frequencyBand === 'high') incomingAudioNodes[peerId].eq.high.gain.value = gainVal;
-                }
-            };
-            document.onmouseup = () => { document.onmousemove = null; document.onmouseup = null; };
-        }
-
-        function setupColorSpectrumBanner() {
-            const spectrum = document.getElementById('spectrum-slider');
-            const cursor = document.getElementById('spectrum-cursor');
             
-            spectrum.onclick = (e) => {
-                let rect = spectrum.getBoundingClientRect();
-                let clickPositionPercent = (e.clientX - rect.left) / rect.width * 100;
-                cursor.style.left = `${clickPositionPercent}%`;
+            node.fxState[fxKey] = !node.fxState[fxKey];
+            document.getElementById(`chk-${trackId}-${fxKey}`).checked = node.fxState[fxKey];
+
+            // Traitement logique de bypass adaptatif Web Audio
+            if(fxKey === 'comp') {
+                node.comp.threshold.value = node.fxState.comp ? -24 : 0; // Seuil à 0 = pas de compression
+            }
+            if(fxKey === 'chorus') {
+                node.chorus.delayTime.value = node.fxState.chorus ? 0.025 : 0;
+            }
+            if(fxKey === 'echo') {
+                node.echo.delayTime.value = node.fxState.echo ? 0.35 : 0;
+            }
+            if(fxKey === 'rev') {
+                node.rev.delayTime.value = node.fxState.rev ? 0.06 : 0;
+            }
+        }
+
+        function updateTrackGain(id, val) {
+            if(activeAudioNodes[id]) {
+                activeAudioNodes[id].vol.gain.value = val / 100;
+            }
+            const cap = document.getElementById(`cap-${id}`);
+            if(cap) cap.style.top = `${100 - val}%`;
+        }
+
+        function toggleTrackMuteState(id) {
+            const node = activeAudioNodes[id];
+            const btn = document.getElementById(`btn-mute-${id}`);
+            if(!node) return;
+
+            if(node.vol.gain.value > 0) {
+                node.oldGain = node.vol.gain.value;
+                node.vol.gain.value = 0;
+                if(btn) btn.classList.add('active-mute');
+            } else {
+                node.vol.gain.value = node.oldGain || 0.8;
+                if(btn) btn.classList.remove('active-mute');
+            }
+        }
+
+        function toggleKaraokeGlobalMode() {
+            karaokeProfileActive = !karaokeProfileActive;
+            const btn = document.getElementById('btn-toggle-karaoke');
+            
+            if(karaokeProfileActive) {
+                btn.classList.add('enabled');
+                Object.keys(activeAudioNodes).forEach(id => applyKaraokePresetToTrack(id));
+            } else {
+                btn.classList.remove('enabled');
+                Object.keys(activeAudioNodes).forEach(id => removeKaraokePresetToTrack(id));
+            }
+        }
+
+        function applyKaraokePresetToTrack(id) {
+            const node = activeAudioNodes[id];
+            if(!node) return;
+            // Configuration automatique optimale voix de scène
+            node.fxState = { comp: true, chorus: false, echo: true, rev: true };
+            ['comp', 'echo', 'rev'].forEach(fx => {
+                const chk = document.getElementById(`chk-${id}-${fx}`);
+                if(chk) chk.checked = true;
+            });
+            node.comp.threshold.value = -24;
+            node.echo.delayTime.value = 0.3;
+            node.rev.delayTime.value = 0.05;
+        }
+
+        function removeKaraokePresetToTrack(id) {
+            const node = activeAudioNodes[id];
+            if(!node) return;
+            node.fxState = { comp: false, chorus: false, echo: false, rev: false };
+            ['comp', 'chorus', 'echo', 'rev'].forEach(fx => {
+                const chk = document.getElementById(`chk-${id}-${fx}`);
+                if(chk) chk.checked = false;
+                toggleSingleHardwareFX(id, fx); // Réinitialise à zéro
+            });
+        }
+
+        function runVisualVUMeterLoop(id) {
+            const node = activeAudioNodes[id];
+            if(!node) return;
+            const bufferLen = node.ana.frequencyBinCount;
+            const dataArr = new Uint8Array(bufferLen);
+            const bar = document.getElementById(`vu-${id}`);
+
+            function update() {
+                if(!activeAudioNodes[id]) return;
+                node.ana.getByteFrequencyData(dataArr);
+                let sum = 0;
+                for(let i=0; i<bufferLen; i++) sum += dataArr[i];
+                let rmsVolume = (sum / bufferLen);
+                let heightPct = Math.min(100, (rmsVolume / 120) * 100);
                 
-                let hue = Math.round((clickPositionPercent / 100) * 360);
-                if(activeLightPeerConnection) {
-                    activeLightPeerConnection.send({type: 'COLOR_SHIFT', value: `hsl(${hue}, 100%, 50%)`});
-                }
-            };
-        }
+                if(bar) bar.style.height = `${heightPct}%`;
 
-        function zoomFX(module) { module.classList.toggle('zoomed'); }
-        function toggleFX(e, btn) { e.stopPropagation(); btn.classList.toggle('active'); }
-
-        // ========================================================
-        // ENGINE 4 : SOURCE DE LUMIÈRE & FLIP 3D
-        // ========================================================
-        let lightGlobalMode = "brat";
-        let localIntensityLimit = 1.0;
-
-        function initLightSourceEngine() {
-            setupLight3DFlipTriggers();
-            const targetHost = window.location.hash.replace('#', '');
-            initPeerConnection(false, targetHost);
-        }
-
-        function setupLight3DFlipTriggers() {
-            const card = document.getElementById('light-3d-card');
-            const front = document.getElementById('light-canvas-front');
-            const btnCloseBack = document.getElementById('btn-close-backpanel');
-
-            front.ondblclick = () => { card.classList.add('flipped'); };
-            btnCloseBack.onclick = () => { card.classList.remove('flipped'); };
-
-            const slider = document.getElementById('local-bright-slider');
-            const cursor = document.getElementById('local-bright-cursor');
-            slider.onclick = (e) => {
-                let rect = slider.getBoundingClientRect();
-                let p = (e.clientX - rect.left) / rect.width;
-                p = Math.min(1, Math.max(0, p));
-                cursor.style.left = `${p * 100}%`;
-                localIntensityLimit = p;
-                front.style.opacity = localIntensityLimit;
-            };
-        }
-
-        function processIncomingLightSignals(data) {
-            const front = document.getElementById('light-canvas-front');
-            const infoText = document.getElementById('light-text-info');
-            if(infoText) infoText.style.display = 'none';
-
-            if(data.type === 'COLOR_SHIFT' && lightGlobalMode === 'ambient') {
-                front.style.background = data.value;
-            }
-            if(data.type === 'AMPLITUDE_DATA') {
-                let amp = data.value;
-                if(lightGlobalMode === 'brat') {
-                    if(amp > 0.45) {
-                        let colors = ['#8ACE00', '#000000', '#ffffff'];
-                        front.style.background = colors[Math.floor(Math.random() * colors.length)];
-                    }
-                } else if(lightGlobalMode === 'strobe') {
-                    front.style.background = `rgba(255,255,255, ${amp * localIntensityLimit})`;
-                }
-            }
-        }
-
-        function sendLightCommand(type, val) {
-            if(type === 'mode' && activeLightPeerConnection) {
-                lightGlobalMode = val;
-                activeLightPeerConnection.send({type: 'SET_LIGHT_MODE', value: val});
-            }
-        }
-
-        // ========================================================
-        // ENGINE 5 : RESEAU P2P WEBRTC
-        // ========================================================
-        function initPeerConnection(isHost = false, targetRoomId = null) {
-            peerInstance = new Peer(null, { debug: 1 });
-
-            peerInstance.on('open', (id) => {
-                p2pRoomId = id;
-                if(isHost) {
-                    document.getElementById('connection-room-badge').innerText = `ROOM ID: ${id}`;
-                    const gatewayUrl = `${window.location.origin}${window.location.pathname}#${id}`;
-                    new QRCode(document.getElementById("gateway-qrcode"), {
-                        text: gatewayUrl,
-                        width: 100, height: 100
+                // Routage des pulsations audio vers la source lumineuse connectée
+                if(rmsVolume > 15) {
+                    transmitDataPacketToHost({
+                        type: 'AUDIO_PULSE_LUMIERE',
+                        intensity: rmsVolume / 140,
+                        color: currentTargetTeinteHex
                     });
-                } else if(targetRoomId) {
-                    executeP2PHandshakeLink(targetRoomId);
                 }
-            });
-
-            if(isHost) {
-                peerInstance.on('connection', (conn) => { handleIncomingDataChannel(conn); });
-                peerInstance.on('call', (call) => {
-                    call.answer(null);
-                    call.on('stream', (remoteStream) => { buildAudioHardwareTopology(call.peer, remoteStream); });
-                });
+                requestAnimationFrame(update);
             }
+            update();
         }
 
-        function executeP2PHandshakeLink(hostId) {
-            const statusNode = document.getElementById('mic-network-status');
-            const lightInfo = document.getElementById('light-text-info');
+        // ==========================================
+        // PIPELINE : SOURCE DE LUMIÈRE ESCLAVE
+        // ==========================================
+        function initLightSourceProcess(roomTarget) {
+            const card = document.getElementById('ui-light-card');
+            const surf = document.getElementById('light-emissive-surface');
             
-            let dataConn = peerInstance.connect(hostId);
-            connectedPeers[hostId] = { dataChannel: dataConn };
+            surf.ondblclick = () => card.classList.add('flipped');
 
-            dataConn.on('open', () => {
-                if(statusNode) {
-                    statusNode.innerText = "Connecté à la Régie";
-                    statusNode.className = "mic-status-node connected";
+            if(!hardwarePeerInstance) {
+                setupNetworkP2PLink(false, roomTarget);
+            }
+        }
+
+        function flashConfirmationAppairage() {
+            const surface = document.getElementById('light-emissive-surface');
+            const pulse = document.getElementById('ui-light-sync-pulse');
+            const debugText = document.getElementById('lbl-light-debug');
+
+            pulse.style.display = 'none';
+            debugText.innerText = "CELLULE SYNCHRONISÉE - EN ATTENTE FLUX CONSOLE";
+            debugText.style.color = "rgba(0,0,0,0.5)";
+
+            // Flash vert de validation hardware
+            surface.style.background = '#39ff14';
+            setTimeout(() => {
+                surface.style.background = '#000000';
+                debugText.style.color = "rgba(255,255,255,0.2)";
+            }, 600);
+        }
+
+        // ==========================================
+        // SQUELETTE LOGIQUE ARCHITECTURE RESEAU P2P
+        // ==========================================
+        function setupNetworkP2PLink(isHostMode = false, explicitRoomId = null) {
+            hardwarePeerInstance = new Peer(null, { debug: 1 });
+
+            hardwarePeerInstance.on('open', (assignedId) => {
+                console.log(`Canal P2P initialisé avec l'identifiant unique : ${assignedId}`);
+                if(isHostMode) {
+                    document.getElementById('lbl-mixer-peer-id').innerText = `ROOM ID: ${assignedId}`;
+                    const targetLink = `${window.location.origin}${window.location.pathname}#${assignedId}`;
+                    
+                    // Génération dynamique du QR Code
+                    document.getElementById('mixer-qr-target').innerHTML = "";
+                    new QRCode(document.getElementById('mixer-qr-target'), {
+                        text: targetLink, width: 80, height: 80, correctLevel: QRCode.CorrectLevel.L
+                    });
+                } else if(explicitRoomId) {
+                    connectDirectlyToTargetHost(explicitRoomId);
                 }
-                if(lightInfo) lightInfo.innerText = "LIAISON LUMIÈRE COMMENCÉE";
-                dataConn.send({type: 'REGISTER_DEVICE', mode: currentMode, name: micCustomName});
             });
 
-            if(currentMode === 'light-source') {
-                dataConn.on('data', (data) => {
-                    if(data.type === 'SET_LIGHT_MODE') lightGlobalMode = data.value;
-                    processIncomingLightSignals(data);
+            if(isHostMode) {
+                hardwarePeerInstance.on('connection', (dataChannel) => {
+                    handleHostIncomingDataTraffic(dataChannel);
+                });
+                hardwarePeerInstance.on('call', (audioCall) => {
+                    audioCall.answer(null); // La régie ne renvoie pas de flux, elle écoute
+                    audioCall.on('stream', (incomingStream) => {
+                        injectAudioProcessingTopology(audioCall.peer, incomingStream);
+                    });
                 });
             }
-
-            if(currentMode === 'microphone') {
-                navigator.mediaDevices.getUserMedia({ audio: { echoCancellation: false, noiseSuppression: false } })
-                    .then((stream) => {
-                        myLocalStream = stream;
-                        peerInstance.call(hostId, stream);
-                    })
-                    .catch(() => alert("Accès micro requis pour émettre le flux."));
-            }
         }
 
-        function handleIncomingDataChannel(conn) {
-            conn.on('data', (data) => {
-                if(data.type === 'REGISTER_DEVICE') {
-                    connectedPeers[conn.peer] = { dataChannel: conn, mode: data.mode, name: data.name };
-                    if(data.mode === 'light-source') {
-                        activeLightPeerConnection = conn;
-                        document.getElementById('mx-page-light').style.display = 'block';
-                        document.getElementById('dot-light-page').style.display = 'block';
-                        document.getElementById('lbl-light-status').innerText = "MATRIX SYNCHRONISÉE";
-                    }
+        function connectDirectlyToTargetHost(hostId) {
+            let channel = hardwarePeerInstance.connect(hostId);
+            globalDataChannels[hostId] = channel;
+
+            channel.on('open', () => {
+                console.log("Poignée de main P2P validée avec le serveur hôte.");
+                if(activeInterfaceMode === 'microphone') {
+                    const b = document.getElementById('lbl-mic-status');
+                    b.innerText = "APPAIRÉ À LA RÉGIE"; b.className = "mic-status-badge connected";
+                } else if(activeInterfaceMode === 'light-source') {
+                    flashConfirmationAppairage();
                 }
-                if(data.type === 'RENAME') {
-                    if(connectedPeers[conn.peer]) connectedPeers[conn.peer].name = data.value;
-                    const sName = document.querySelector(`#strip-simple-${conn.peer} .strip-name`);
-                    if(sName) sName.innerText = data.value;
-                }
-                if(data.type === 'MUTE_STATUS') {
-                    const btn = document.getElementById(`btn-mute-${conn.peer}`);
+                channel.send({ type: 'HANDSHAKE_INIT', clientMode: activeInterfaceMode });
+            });
+        }
+
+        function handleHostIncomingDataTraffic(channel) {
+            channel.on('data', (packet) => {
+                globalDataChannels[channel.peer] = channel;
+
+                if(packet.type === 'SIGNAL_MUTE') {
+                    const btn = document.getElementById(`btn-mute-${channel.peer}`);
                     if(btn) {
-                        if(data.value) btn.classList.add('active');
-                        else btn.classList.remove('active');
+                        if(packet.value) btn.classList.add('active-mute');
+                        else btn.classList.remove('active-mute');
                     }
+                }
+                if(packet.type === 'LUMIERE_COLOR_SYNC' && activeInterfaceMode === 'light-source') {
+                    document.getElementById('light-emissive-surface').style.background = packet.color;
+                }
+                if(packet.type === 'AUDIO_PULSE_LUMIERE' && activeInterfaceMode === 'light-source') {
+                    const surf = document.getElementById('light-emissive-surface');
+                    surf.style.background = packet.color;
+                    surf.style.opacity = Math.max(0.2, packet.intensity);
                 }
             });
         }
 
-        function sendDataToHost(packet) {
-            for(let pId in connectedPeers) {
-                if(connectedPeers[pId].dataChannel) connectedPeers[pId].dataChannel.send(packet);
-            }
+        function transmitDataPacketToHost(packet) {
+            Object.keys(globalDataChannels).forEach(peerId => {
+                if(globalDataChannels[peerId] && globalDataChannels[peerId].open) {
+                    globalDataChannels[peerId].send(packet);
+                }
+            });
+        }
+
+        function varColorHexLookup(varName) {
+            return getComputedStyle(document.documentElement).getPropertyValue(varName).trim();
         }
     </script>
 </body>
